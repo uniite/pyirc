@@ -150,10 +150,15 @@
         });
       },
       notification: function(data) {
+        var shouldScroll;
+        shouldScroll = $(document).scrollTop() === ($(document).height() - $(window).height());
         console.log("Notification: " + data);
-        return conversation.onDelta({
+        conversation.onDelta({
           messages: data
         });
+        if (shouldScroll) {
+          return $(document).scrollTop($(document).height() - $(window).height());
+        }
       },
       error: function(e) {
         console.log("Error!");

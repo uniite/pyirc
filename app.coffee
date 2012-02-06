@@ -93,8 +93,10 @@ $ ->
         console.log "Got: " + result
         ko.mapping.fromJS({messages: result}, {}, conversation);
     notification: (data) =>
+      shouldScroll = $(document).scrollTop() == ($(document).height() - $(window).height())
       console.log "Notification: " + data
       conversation.onDelta messages: data
+      $(document).scrollTop $(document).height() - $(window).height() if shouldScroll
       #newViewModel = ko.mapping.fromJS({messages: data});
       #for message in newViewModel.messages()
       #  viewModel.messages.push message
