@@ -2,23 +2,27 @@
 import gevent.monkey
 gevent.monkey.patch_all()
 
-from gevent import Greenlet, sleep
+from gevent import Greenlet
 from irc_connection import IRCConnection
 
 import json
 import collections
 
-import time
-
 
 class SimpleObservable(object):
+    def __init__(self):
+        self._subscribers = {}
+        for k,v in vars(self).iteritems():
+            if isinstance(v, self.__class__):
+                def subscription(event, *args, **kwargs):
+                    self._notify("%s.%s" % (k, event), *args, **kwargs)
+                v.subscribe("__all__", subscription)
+
     def _notify(self, event, *args, **kwargs):
-        if hasattr(self, "_subscribers") and self._subscribers.has_key(event):
+        if self._subscribers.has_key(event):
             self._subscribers[event](*args, **kwargs)
 
     def subscribe(self, event, callback):
-        if not hasattr(self, "_subscribers"):
-            self._subscribers = {}
         self._subscribers[event] = callback
 
 
@@ -26,6 +30,7 @@ class SimpleObservable(object):
 class ObservableList(collections.MutableSequence, SimpleObservable):
 
     def __init__(self, *args):
+        SimpleObservable.__init__(self)
         self.list = list()
         self.extend(list(args))
 
@@ -93,12 +98,13 @@ class Message(JSONSerializable):
             repr(self.conversation)
         )
 
-class Conversation(JSONSerializable):
+class Conversation(JSONSerializable, SimpleObservable):
     _json_attrs = ["name", "topic", "messages"]
-    def __init__(self, name, connection, users={}):
+    def __init__(self, name, connection, users=None):
+        SimpleObservable.__init__(self)
         self.name = name
         self.connection = connection
-        self.users = users
+        self.users = users or {}
         self.topic = ""
         self.messages = ObservableList()
         self.messages.subscribe("add", self.new_message)
@@ -131,7 +137,7 @@ class Session(object):
         conv = self.conversations.get(conv_key)
         if not conv:
             conv = Conversation(conv_name, connection, {})
-            self.conversations[conv_key] = (conv)
+            self.conversations[conv_key] = conv
         conv.messages.append(Message(len(conv.messages), username, message, conv))
 
     def start(self):
