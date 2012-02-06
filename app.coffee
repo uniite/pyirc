@@ -63,27 +63,44 @@ class Message
     @sender = ko.observable(@sender)
     @body = ko.observable(@body)
 
+
+class SynchronizedModel
+  onDelta: (data) =>
+    console.log(data)
+    for key, value of data
+      if @[key].push
+        newData = {}
+        newData[key] = value
+        for item in ko.mapping.fromJS(newData)[key]()
+          @[key].push(item)
+      else
+        @[key](value)
+
+
+
+
+class ConversationModel extends SynchronizedModel
+  name: ko.observable()
+  messages: ko.observableArray([new Message("someguy", "hi"), new Message("me", "hello")])
+  addMessage: ->
+    @messages.push(new Message("someguy", "hmmm"))
+
 $ ->
-  # This is a simple *viewmodel* - JavaScript that defines the data and behavior of your UI
-  class AppViewModel
-    messages: ko.observableArray([new Message("someguy", "hi"), new Message("me", "hello")])
-    addMessage: ->
-      @messages.push(new Message("someguy", "hmmm"))
-
   window.client = new JSONRPCClient
-      url: "ws://127.0.0.1:8000/",
-      ready: =>
-        client.getMessages (result) =>
-          console.log "Got: " + result
-          ko.mapping.fromJS({messages: result}, {}, viewModel);
-      notification: (data) =>
-        console.log "Notification: " + data
-        newViewModel = ko.mapping.fromJS({messages: data});
-        for message in newViewModel.messages()
-          viewModel.messages.push message
+    url: "ws://127.0.0.1:8000/",
+    ready: =>
+      client.getMessages (result) =>
+        console.log "Got: " + result
+        ko.mapping.fromJS({messages: result}, {}, conversation);
+    notification: (data) =>
+      console.log "Notification: " + data
+      conversation.onDelta messages: data
+      #newViewModel = ko.mapping.fromJS({messages: data});
+      #for message in newViewModel.messages()
+      #  viewModel.messages.push message
 
-      error: (e) => console.log "Error!"; throw e;
+    error: (e) => console.log "Error!"; throw e;
 
   # Activates knockout.js
-  viewModel = new AppViewModel
-  ko.applyBindings viewModel
+  window.conversation = new ConversationModel
+  ko.applyBindings conversation

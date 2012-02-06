@@ -1,5 +1,8 @@
 (function() {
-  var JSONRPCClient, Message;
+  var ConversationModel, JSONRPCClient, Message, SynchronizedModel,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = Object.prototype.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   JSONRPCClient = (function() {
 
@@ -78,22 +81,64 @@
 
   })();
 
+  SynchronizedModel = (function() {
+
+    function SynchronizedModel() {
+      this.onDelta = __bind(this.onDelta, this);
+    }
+
+    SynchronizedModel.prototype.onDelta = function(data) {
+      var item, key, newData, value, _results;
+      console.log(data);
+      _results = [];
+      for (key in data) {
+        value = data[key];
+        if (this[key].push) {
+          newData = {};
+          newData[key] = value;
+          _results.push((function() {
+            var _i, _len, _ref, _results2;
+            _ref = ko.mapping.fromJS(newData)[key]();
+            _results2 = [];
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              item = _ref[_i];
+              _results2.push(this[key].push(item));
+            }
+            return _results2;
+          }).call(this));
+        } else {
+          _results.push(this[key](value));
+        }
+      }
+      return _results;
+    };
+
+    return SynchronizedModel;
+
+  })();
+
+  ConversationModel = (function(_super) {
+
+    __extends(ConversationModel, _super);
+
+    function ConversationModel() {
+      ConversationModel.__super__.constructor.apply(this, arguments);
+    }
+
+    ConversationModel.prototype.name = ko.observable();
+
+    ConversationModel.prototype.messages = ko.observableArray([new Message("someguy", "hi"), new Message("me", "hello")]);
+
+    ConversationModel.prototype.addMessage = function() {
+      return this.messages.push(new Message("someguy", "hmmm"));
+    };
+
+    return ConversationModel;
+
+  })(SynchronizedModel);
+
   $(function() {
-    var AppViewModel, viewModel,
-      _this = this;
-    AppViewModel = (function() {
-
-      function AppViewModel() {}
-
-      AppViewModel.prototype.messages = ko.observableArray([new Message("someguy", "hi"), new Message("me", "hello")]);
-
-      AppViewModel.prototype.addMessage = function() {
-        return this.messages.push(new Message("someguy", "hmmm"));
-      };
-
-      return AppViewModel;
-
-    })();
+    var _this = this;
     window.client = new JSONRPCClient({
       url: "ws://127.0.0.1:8000/",
       ready: function() {
@@ -101,30 +146,22 @@
           console.log("Got: " + result);
           return ko.mapping.fromJS({
             messages: result
-          }, {}, viewModel);
+          }, {}, conversation);
         });
       },
       notification: function(data) {
-        var message, newViewModel, _i, _len, _ref, _results;
         console.log("Notification: " + data);
-        newViewModel = ko.mapping.fromJS({
+        return conversation.onDelta({
           messages: data
         });
-        _ref = newViewModel.messages();
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          message = _ref[_i];
-          _results.push(viewModel.messages.push(message));
-        }
-        return _results;
       },
       error: function(e) {
         console.log("Error!");
         throw e;
       }
     });
-    viewModel = new AppViewModel;
-    return ko.applyBindings(viewModel);
+    window.conversation = new ConversationModel;
+    return ko.applyBindings(conversation);
   });
 
 }).call(this);
