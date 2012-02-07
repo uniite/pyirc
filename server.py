@@ -4,56 +4,9 @@ gevent.monkey.patch_all()
 
 from gevent import Greenlet
 from irc_connection import IRCConnection
+from observable import SimpleObservable, ObservableList
 
 import json
-import collections
-
-
-class SimpleObservable(object):
-    def __init__(self):
-        self._subscribers = {}
-        for k,v in vars(self).iteritems():
-            if isinstance(v, self.__class__):
-                def subscription(event, *args, **kwargs):
-                    self._notify("%s.%s" % (k, event), *args, **kwargs)
-                v.subscribe("__all__", subscription)
-
-    def _notify(self, event, *args, **kwargs):
-        if self._subscribers.has_key(event):
-            self._subscribers[event](*args, **kwargs)
-
-    def subscribe(self, event, callback):
-        self._subscribers[event] = callback
-
-
-
-class ObservableList(collections.MutableSequence, SimpleObservable):
-
-    def __init__(self, *args):
-        SimpleObservable.__init__(self)
-        self.list = list()
-        self.extend(list(args))
-
-    def __len__(self): return len(self.list)
-
-    def __getitem__(self, i): return self.list[i]
-
-    def __delitem__(self, i):
-        self._notify("remove", i, self.list[i])
-        del self.list[i]
-
-    def __setitem__(self, i, v):
-        self.list[i] = v
-
-    def insert(self, i, v):
-        self._notify("add", v)
-        self.list.insert(i, v)
-
-    def __str__(self):
-        return str(self.list)
-
-    def to_dict(self):
-        return self.list
 
 
 
@@ -107,14 +60,20 @@ class Conversation(JSONSerializable, SimpleObservable):
         self.users = users or {}
         self.topic = ""
         self.messages = ObservableList()
-        self.messages.subscribe("add", self.new_message)
-        self.messages.subscribe("remove", self.delete_message)
+        #self.messages.subscribe("add", self.new_message)
+        #self.messages.subscribe("remove", self.delete_message)
 
     def new_message(self, message):
         print "[Conv:%s] %s" % (self.name, message)
 
     def delete_message(self, index, message):
         raise Exception("Message deletion not allowed!")
+
+
+class DiffGenerator(object):
+    def callback(self, event, *args, **kwargs):
+        if event == "add":
+            pass
 
 class Session(object):
     connections = {}
@@ -138,6 +97,9 @@ class Session(object):
         if not conv:
             conv = Conversation(conv_name, connection, {})
             self.conversations[conv_key] = conv
+            def test(event, *args, **kwargs):
+                print "<%s> %s | %s" % (event, args, kwargs)
+            conv.subscribe("__all__", test)
         conv.messages.append(Message(len(conv.messages), username, message, conv))
 
     def start(self):
