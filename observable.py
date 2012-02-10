@@ -20,7 +20,7 @@ class SimpleObservable(object):
             return
         for s in self._subscribers.get(event, []) + self._subscribers.get("__all__", []):
             if s.shared:
-                if s.prefix:
+                if s.prefix != None:
                     if type(target) != tuple:
                         target = (target,)
                     s.callback((s.prefix,) + target, event, data)
@@ -29,7 +29,7 @@ class SimpleObservable(object):
             else:
                 s.callback(target, data)
 
-    def subscribe(self, event, callback, shared=False, prefix=""):
+    def subscribe(self, event, callback, shared=False, prefix=None):
         # If this is our first or only subscription,
         # look for children from which we can propagate events
         if not hasattr(self, "_subscriptions") or self._subscriptions == []:
@@ -123,7 +123,7 @@ class ObservableList(collections.MutableSequence, SimpleObservable):
     def to_dict(self):
         return self.list
 
-    def subscribe(self, event, callback, shared=False, prefix=""):
+    def subscribe(self, event, callback, shared=False, prefix=None):
         # Create a subscriptions list if we don't already have one
         if not hasattr(self, "_subscriptions"):
             self._subscriptions = []
@@ -165,7 +165,7 @@ class ObservableDict(dict, SimpleObservable):
         # Proceed with the normal dict item set
         dict.__setitem__(self, k, v)
 
-    def subscribe(self, event, callback, shared=False, prefix=""):
+    def subscribe(self, event, callback, shared=False, prefix=None):
         # Create a subscriptions list if we don't already have one
         if not hasattr(self, "_subscriptions"):
             self._subscriptions = []

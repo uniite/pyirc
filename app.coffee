@@ -20,7 +20,9 @@ class JSONRPCClient
       # Parse the response
       response = JSON.parse(e.data)
 
+      # If the response is a notificatiion from the server...
       if response.notification
+        # Hand it off the notification handler
         if @options && typeof @options.notification == "function"
           @options.notification(response.notification)
       # If this response has a callback, call it
@@ -64,45 +66,55 @@ class Message
     @body = ko.observable(@body)
 
 
-class SynchronizedModel
-  onDelta: (data) =>
-    console.log(data)
-    for key, value of data
-      if @[key].push
-        newData = {}
-        newData[key] = value
-        for item in ko.mapping.fromJS(newData)[key]()
-          @[key].push(item)
-      else
-        @[key](value)
+class Util
+  @applyDelta: (target, delta) ->
+    console.log(delta)
+    # Figure out what the target of the delta is,
+    # which will be based off of target
+    last_key = delta.target.pop()
+    for key in delta.target
+      target = target[key]
+      last_target = target
+      if typeof target == "function"
+        target = target()
+    # Apply the delta to the target based on the event type
+    data = ko.mapping.fromJS delta.data
+    switch delta.event
+      when "add"
+        last_target.push(data)
+      when "change", "set"
+        last_target.replace(last_key, data)
+      when "remove"
+        last_target.remove(last_key)
 
 
 
 
-class ConversationModel extends SynchronizedModel
+class ConversationModel
   name: ko.observable()
   messages: ko.observableArray([new Message("someguy", "hi"), new Message("me", "hello")])
   addMessage: ->
     @messages.push(new Message("someguy", "hmmm"))
 
+class SessionModel
+  name: ko.observable()
+
 $ ->
   window.client = new JSONRPCClient
     url: "ws://127.0.0.1:8000/",
     ready: =>
-      client.getMessages (result) =>
-        console.log "Got: " + result
-        ko.mapping.fromJS({messages: result}, {}, conversation);
+      client.getSession (result) =>
+        console.log "Got: "
+        console.log result
+        window.session = ko.mapping.fromJS(result);
+        ko.applyBindings session
     notification: (data) =>
       shouldScroll = $(document).scrollTop() == ($(document).height() - $(window).height())
       console.log "Notification: " + data
-      conversation.onDelta messages: data
+      Util.applyDelta session, data.delta
       $(document).scrollTop $(document).height() - $(window).height() if shouldScroll
       #newViewModel = ko.mapping.fromJS({messages: data});
       #for message in newViewModel.messages()
       #  viewModel.messages.push message
 
     error: (e) => console.log "Error!"; throw e;
-
-  # Activates knockout.js
-  window.conversation = new ConversationModel
-  ko.applyBindings conversation

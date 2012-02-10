@@ -1,8 +1,5 @@
 (function() {
-  var ConversationModel, JSONRPCClient, Message, SynchronizedModel,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+  var ConversationModel, JSONRPCClient, Message, SessionModel, Util;
 
   JSONRPCClient = (function() {
 
@@ -81,49 +78,40 @@
 
   })();
 
-  SynchronizedModel = (function() {
+  Util = (function() {
 
-    function SynchronizedModel() {
-      this.onDelta = __bind(this.onDelta, this);
-    }
+    function Util() {}
 
-    SynchronizedModel.prototype.onDelta = function(data) {
-      var item, key, newData, value, _results;
-      console.log(data);
-      _results = [];
-      for (key in data) {
-        value = data[key];
-        if (this[key].push) {
-          newData = {};
-          newData[key] = value;
-          _results.push((function() {
-            var _i, _len, _ref, _results2;
-            _ref = ko.mapping.fromJS(newData)[key]();
-            _results2 = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              item = _ref[_i];
-              _results2.push(this[key].push(item));
-            }
-            return _results2;
-          }).call(this));
-        } else {
-          _results.push(this[key](value));
-        }
+    Util.applyDelta = function(target, delta) {
+      var data, key, last_key, last_target, _i, _len, _ref;
+      console.log(delta);
+      last_key = delta.target.pop();
+      _ref = delta.target;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        key = _ref[_i];
+        target = target[key];
+        last_target = target;
+        if (typeof target === "function") target = target();
       }
-      return _results;
+      data = ko.mapping.fromJS(delta.data);
+      switch (delta.event) {
+        case "add":
+          return last_target.push(data);
+        case "change":
+        case "set":
+          return last_target.replace(last_key, data);
+        case "remove":
+          return last_target.remove(last_key);
+      }
     };
 
-    return SynchronizedModel;
+    return Util;
 
   })();
 
-  ConversationModel = (function(_super) {
+  ConversationModel = (function() {
 
-    __extends(ConversationModel, _super);
-
-    function ConversationModel() {
-      ConversationModel.__super__.constructor.apply(this, arguments);
-    }
+    function ConversationModel() {}
 
     ConversationModel.prototype.name = ko.observable();
 
@@ -135,27 +123,35 @@
 
     return ConversationModel;
 
-  })(SynchronizedModel);
+  })();
+
+  SessionModel = (function() {
+
+    function SessionModel() {}
+
+    SessionModel.prototype.name = ko.observable();
+
+    return SessionModel;
+
+  })();
 
   $(function() {
     var _this = this;
-    window.client = new JSONRPCClient({
+    return window.client = new JSONRPCClient({
       url: "ws://127.0.0.1:8000/",
       ready: function() {
-        return client.getMessages(function(result) {
-          console.log("Got: " + result);
-          return ko.mapping.fromJS({
-            messages: result
-          }, {}, conversation);
+        return client.getSession(function(result) {
+          console.log("Got: ");
+          console.log(result);
+          window.session = ko.mapping.fromJS(result);
+          return ko.applyBindings(session);
         });
       },
       notification: function(data) {
         var shouldScroll;
         shouldScroll = $(document).scrollTop() === ($(document).height() - $(window).height());
         console.log("Notification: " + data);
-        conversation.onDelta({
-          messages: data
-        });
+        Util.applyDelta(session, data.delta);
         if (shouldScroll) {
           return $(document).scrollTop($(document).height() - $(window).height());
         }
@@ -165,8 +161,6 @@
         throw e;
       }
     });
-    window.conversation = new ConversationModel;
-    return ko.applyBindings(conversation);
   });
 
 }).call(this);

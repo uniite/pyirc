@@ -10,11 +10,15 @@ from server import Session, JSONEncoder
 class RPCService(object):
     @classmethod
     def listMethods(cls):
-        return ["getConversations", "getMessages", "shout"]
+        return ["getConversations", "getMessages", "shout", "getSession"]
 
     @classmethod
     def getConversations(cls):
         return session.conversations.values()
+
+    @classmethod
+    def getSession(cls):
+        return session.to_dict()
 
     @classmethod
     def getMessages(cls):
@@ -33,10 +37,15 @@ def rpc_server(environ, start_response):
         return http_handler(environ, start_response)
     try:
         print "Got websocket request"
-        def recv_message(message):
-            websocket.send(JSONEncoder().encode({"notification": [message]}))
-        for conv in session.conversations.values():
-            conv.messages.subscribe("add", recv_message)
+        def on_event(target, event, data):
+            delta = {
+                "event": event,
+                "target": target,
+                "data": data
+            }
+            print JSONEncoder().encode(delta)
+            websocket.send(JSONEncoder().encode({"notification": {"delta": delta}}))
+        subscription = session.subscribe("__all__", on_event)
         while True:
             request = websocket.receive()
             if request is None:
@@ -45,14 +54,15 @@ def rpc_server(environ, start_response):
                 result = handle_json_rpc_request(request)
                 if result:
                     websocket.send(result)
-        websocket.close()
     except WebSocketError, ex:
         print "%s: %s" % (ex.__class__.__name__, ex)
+    finally:
+        subscription.cancel()
+        websocket.close()
 
 def handle_json_rpc_request(request):
     # Parse the request
     try:
-        print request
         request = json.loads(request)
         print request
     except:
@@ -71,7 +81,6 @@ def handle_json_rpc_request(request):
         # Raise an exception if the method name is invalid
         if not hasattr(RPCService, request["method"]) or request["method"].startswith("_"):
             raise Exception("Method '%s' not found", )
-
         # Get the method
         method = getattr(RPCService, request["method"])
         # Validate the parameters as a list of arguments,
@@ -87,6 +96,7 @@ def handle_json_rpc_request(request):
         # Call the method with the given arguments, and store the result
         # If an exception occurs, the function-level except will handle it
         result = method(*args, **kwargs)
+        print result
         exception = None
 
     # Handle all Exceptions as JSON-RPC exceptions

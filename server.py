@@ -4,7 +4,7 @@ gevent.monkey.patch_all()
 
 from gevent import Greenlet
 from irc_connection import IRCConnection
-from observable import SimpleObservable, ObservableList
+from observable import SimpleObservable, ObservableList, ObservableDict
 
 import json
 
@@ -75,10 +75,13 @@ class DiffGenerator(object):
         if event == "add":
             pass
 
-class Session(object):
-    connections = {}
-    users = {}
-    conversations = {}
+class Session(SimpleObservable, JSONSerializable):
+    _json_attrs = ["conversations"]
+    def __init__(self):
+        self.connections = {} #ObservableDict()
+        self.users = {} #ObservableDict()
+        self.conversations = ObservableList()
+        self.conversation_lookup = {}
 
     def get_conversation(self, key):
         if self.conversations.has_key(key):
@@ -92,14 +95,12 @@ class Session(object):
 
         else:
             conv_name = username
-        conv_key = (connection, conv_name)
-        conv = self.conversations.get(conv_key)
+        conv_key = "%s@%s" % (conv_name, connection)
+        conv = self.conversation_lookup.get(conv_key)
         if not conv:
             conv = Conversation(conv_name, connection, {})
-            self.conversations[conv_key] = conv
-            def test(event, *args, **kwargs):
-                print "<%s> %s | %s" % (event, args, kwargs)
-            conv.subscribe("__all__", test)
+            self.conversations.append(conv)
+            self.conversation_lookup[conv_key] = conv
         conv.messages.append(Message(len(conv.messages), username, message, conv))
 
     def start(self):

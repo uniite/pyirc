@@ -70,7 +70,7 @@ class IRCConnection(irclib.SimpleIRCClient):
 
     def _on_disconnect(self, c, e):
         """[Internal]"""
-        self.channels = IRCDict()
+        self.channels = {}
         self.connection.execute_delayed(self.reconnection_interval,
                                         self._connected_checker)
 
@@ -108,6 +108,9 @@ class IRCConnection(irclib.SimpleIRCClient):
     def on_dccmsg(self, c, e):
         self.session.on_message("DCCMSG %s" % " | ".join([e.eventtype(), e.source(), e.target(), str(e.arguments())]))
 
+
+    def __str__(self):
+        return "<IRCConnection(%s, %s)>" % (id(self), self.server_list[0][0])
 
 
     def start(self):

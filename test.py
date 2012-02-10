@@ -180,7 +180,7 @@ class TestObservableList(unittest.TestCase):
         class Alerter(SimpleObservable):
             def alert(self):
                 self._notify(None, "alert", "Alert!")
-            # Create an observable dict that contains other observables
+        # Create an observable list that contains other observables
         observable_list = ObservableList(Alerter(), Alerter())
         # Subscribe to all events
         subscription = observable_list.subscribe("__all__", self.callback)
@@ -188,6 +188,25 @@ class TestObservableList(unittest.TestCase):
         observable_list[1].alert()
         # Ensure this triggered the callback
         self.assertEqual(((1, None), "alert", "Alert!"), self.callback_result)
+
+    def test_double_propagation(self):
+        class MiddleMan(SimpleObservable):
+            def __init__(self):
+                self.children = ObservableList()
+        # Create an observable list in an observable in an onbservable list
+        parent = ObservableList()
+        # Subscribe to the to-level list
+        parent.subscribe("__all__", self.callback)
+        # Add something to it
+        middle_man = MiddleMan()
+        parent.append(middle_man)
+        # Ensure this tells us the item was added at index 0 of the top-level
+        self.assertEqual((0, "add", middle_man), self.callback_result)
+        # Add a few things to the inner list
+        parent[0].children.append("hi!")
+        parent[0].children.append("hello!")
+        # Ensure we get told the string was added at parent[0].children[0]
+        self.assertEqual(((0, "children", 1), "add", "hello!"), self.callback_result)
 
     def test_str(self):
         self.assertEqual("[1, 2, 3]", "%s" % ObservableList(1, 2, 3))
