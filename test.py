@@ -1,7 +1,7 @@
 __author__ = 'Jon'
 
 import unittest
-from observable import SimpleObservable
+from observable import SimpleObservable, ObservableList, ObservableDict
 
 class TestSimpleObservable(unittest.TestCase):
     def setUp(self):
@@ -9,20 +9,18 @@ class TestSimpleObservable(unittest.TestCase):
 
     class Alerter(SimpleObservable):
         def alert(self):
-            self._notify("alert", "Alert!", level="important")
+            self._notify(None, "alert", "Alert!")
         def warn(self):
-            self._notify("warn", "Warning!", level="meh")
+            self._notify(None, "warn", "Warning!")
 
-    def callback(self, msg, level=None):
-        self.callback_result = (msg, level)
+    def callback(self, *args):
+        self.callback_result = args
 
-    def multi_callback(self, msg, level=None):
+    def multi_callback(self, *args):
         if not self.callback_result:
             self.callback_result = []
-        self.callback_result.append((msg, level))
+        self.callback_result.append(args)
 
-    def shared_callback(self, event, msg, level=None):
-        self.callback_result = (event, msg, level)
 
     def test_subscribe(self):
         # Create an observable
@@ -34,22 +32,22 @@ class TestSimpleObservable(unittest.TestCase):
         # Trigger an event
         alerter.alert()
         # Make sure it called the callback
-        self.assertEqual(("Alert!", "important"), self.callback_result)
+        self.assertEqual((None, "Alert!"), self.callback_result)
 
     def test_shared_subscribe(self):
         # Create an observable
         alerter = self.Alerter()
         # Subscribe to its alert and warn events
-        subscription = alerter.subscribe("alert", self.shared_callback, True)
-        subscription = alerter.subscribe("warn", self.shared_callback, True)
+        subscription = alerter.subscribe("alert", self.callback, True)
+        subscription = alerter.subscribe("warn", self.callback, True)
         # Trigger an event
         alerter.alert()
         # Make sure it called the callback
-        self.assertEqual(("alert", "Alert!", "important"), self.callback_result)
+        self.assertEqual((None, "alert", "Alert!"), self.callback_result)
         # Trigger another event
         alerter.warn()
         # Make sure it called the callback
-        self.assertEqual(("warn", "Warning!", "meh"), self.callback_result)
+        self.assertEqual((None, "warn", "Warning!"), self.callback_result)
 
     def test_subscribe_multiple(self):
         # Create an observable
@@ -60,21 +58,21 @@ class TestSimpleObservable(unittest.TestCase):
         # Trigger an event
         alerter.alert()
         # Make sure it called the callback thrice
-        self.assertEqual([("Alert!", "important")] * 3, self.callback_result)
+        self.assertEqual([(None, "Alert!")] * 3, self.callback_result)
 
     def test_subscribe_all(self):
         # Create an observable
         alerter = self.Alerter()
         # Subscribe to everything
-        subscription = alerter.subscribe("__all__", self.shared_callback)
+        subscription = alerter.subscribe("__all__", self.callback)
         # Trigger an event
         alerter.alert()
         # Make sure it called the callback
-        self.assertEqual(("alert", "Alert!", "important"), self.callback_result)
+        self.assertEqual((None, "alert", "Alert!"), self.callback_result)
         # Trigger another event
         alerter.warn()
         # Make sure it called the callback
-        self.assertEqual(("warn", "Warning!", "meh"), self.callback_result)
+        self.assertEqual((None, "warn", "Warning!"), self.callback_result)
 
     def test_unsubscribe(self):
         # Create an observable
@@ -100,7 +98,7 @@ class TestSimpleObservable(unittest.TestCase):
         # Make sure it did not call the callback
         self.assertEqual(None, self.callback_result)
 
-    def test_subscription_propagation(self):
+    def test_propagation(self):
         # Create an observable that contains an observable
         class SuperAlerter(SimpleObservable):
             def __init__(self, alerter, alerter2):
@@ -109,11 +107,11 @@ class TestSimpleObservable(unittest.TestCase):
                 SimpleObservable.__init__(self)
         super_alerter = SuperAlerter(self.Alerter(), self.Alerter())
         # Subscribe to everything
-        subscription = super_alerter.subscribe("__all__", self.shared_callback)
+        subscription = super_alerter.subscribe("__all__", self.callback)
         # Trigger an event on the second Alerter
         super_alerter.alerter2.alert()
         # Make sure it propagated via super_alerter, with the right prefix
-        self.assertEqual(("alerter2.alert", "Alert!", "important"), self.callback_result)
+        self.assertEqual((("alerter2", None), "alert", "Alert!"), self.callback_result)
 
     def test_garbage_collection(self):
         status = {"deleted": False}
@@ -125,7 +123,7 @@ class TestSimpleObservable(unittest.TestCase):
         # Give it a child observable to subscribe to
         paranoid_alerter.child = self.Alerter()
         # Give it a subscription
-        subscription = paranoid_alerter.subscribe("__all__", self.shared_callback)
+        subscription = paranoid_alerter.subscribe("__all__", self.callback)
         # Make sure it sticks
         self.assertEqual([subscription], paranoid_alerter._subscribers.values()[0])
         self.assertNotEqual([], paranoid_alerter.child._subscribers.values())
@@ -139,6 +137,118 @@ class TestSimpleObservable(unittest.TestCase):
         # Ensure paranoid_alerter can now be garbage collected
         del paranoid_alerter
         self.assertTrue(status["deleted"])
+
+
+class TestObservableList(unittest.TestCase):
+    def setUp(self):
+        self.callback_result = None
+
+    def callback(self, *args):
+        self.callback_result = args
+
+    def test_add(self):
+        # Create an observable list
+        observable_list = ObservableList()
+        # Subscribe to add events
+        subscription = observable_list.subscribe("add", self.callback)
+        # Add an item to it
+        observable_list.append("nom")
+        # Ensure this triggered the callback
+        self.assertEqual((0, "nom"), self.callback_result)
+
+    def test_remove(self):
+        # Create an observable dict
+        observable_list = ObservableList("one", "of", "these", "things")
+        # Subscribe to remove events
+        subscription = observable_list.subscribe("remove", self.callback)
+        # Remove an item from it
+        del observable_list[2]
+        # Ensure this triggered the callback
+        self.assertEqual((2, "these"), self.callback_result)
+
+    def test_change(self):
+        # Create an observable dict
+        observable_list = ObservableList("something", "might", "change")
+        # Subscribe to change events
+        subscription = observable_list.subscribe("change", self.callback)
+        # Change an item in it
+        observable_list[1] = "will"
+        # Ensure this triggered the callback
+        self.assertEqual((1, "will"), self.callback_result)
+
+    def test_propagation(self):
+        class Alerter(SimpleObservable):
+            def alert(self):
+                self._notify(None, "alert", "Alert!")
+            # Create an observable dict that contains other observables
+        observable_list = ObservableList(Alerter(), Alerter())
+        # Subscribe to all events
+        subscription = observable_list.subscribe("__all__", self.callback)
+        # Trigger an alert on something in the list
+        observable_list[1].alert()
+        # Ensure this triggered the callback
+        self.assertEqual(((1, None), "alert", "Alert!"), self.callback_result)
+
+    def test_str(self):
+        self.assertEqual("[1, 2, 3]", "%s" % ObservableList(1, 2, 3))
+
+    def test_to_dict(self):
+        self.assertEqual([1, 2, 3], ObservableList(1, 2, 3).to_dict())
+
+
+
+class TestObservableDict(unittest.TestCase):
+    def setUp(self):
+        self.callback_result = None
+
+    def callback(self, *args):
+        self.callback_result = args
+
+    def test_add(self):
+        # Create an observable dict
+        observable_dict = ObservableDict()
+        # Subscribe to add events
+        subscription = observable_dict.subscribe("add", self.callback)
+        # Add an item to it
+        observable_dict["foo"] = "bar"
+        # Ensure this triggered the callback
+        self.assertEqual(("foo", "bar"), self.callback_result)
+
+    def test_remove(self):
+        # Create an observable dict
+        observable_dict = ObservableDict({"good": "bye"})
+        # Subscribe to remove events
+        subscription = observable_dict.subscribe("remove", self.callback)
+        # Remove an item from it
+        del observable_dict["good"]
+        # Ensure this triggered the callback
+        self.assertEqual(("good", "bye"), self.callback_result)
+
+    def test_change(self):
+        # Create an observable dict
+        observable_dict = ObservableDict({"good": "bye"})
+        # Subscribe to change events
+        subscription = observable_dict.subscribe("change", self.callback)
+        # Change an item in it
+        observable_dict["good"] = "morning"
+        # Ensure this triggered the callback
+        self.assertEqual(("good", "morning"), self.callback_result)
+
+    def test_propagation(self):
+        class Alerter(SimpleObservable):
+            def alert(self):
+                self._notify(None, "alert", "Alert!")
+        # Create an observable dict that contains other observables
+        observable_dict = ObservableDict({
+            "this": Alerter(),
+            "that": Alerter()
+        })
+        # Subscribe to all events
+        subscription = observable_dict.subscribe("__all__", self.callback)
+        # Trigger an alert on something in the dict
+        observable_dict["that"].alert()
+        # Ensure this triggered the callback
+        self.assertEqual((("that", None), "alert", "Alert!"), self.callback_result)
 
 
 
