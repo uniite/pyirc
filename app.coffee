@@ -77,8 +77,15 @@ class Util
       last_target = target
       if typeof target == "function"
         target = target()
+    # If the delta isn't guarunteed to contain constant/static data,
+    # make the data observable.
+    # TODO: See if it is worth it, resource-wise.
+    # You could do cool things like dynamically change username aliases
+    if delta.constant
+      data = delta.data
+    else
+      data = ko.mapping.fromJS delta.data
     # Apply the delta to the target based on the event type
-    data = ko.mapping.fromJS delta.data
     switch delta.event
       when "add"
         last_target.push(data)

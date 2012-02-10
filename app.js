@@ -93,7 +93,11 @@
         last_target = target;
         if (typeof target === "function") target = target();
       }
-      data = ko.mapping.fromJS(delta.data);
+      if (delta.constant) {
+        data = delta.data;
+      } else {
+        data = ko.mapping.fromJS(delta.data);
+      }
       switch (delta.event) {
         case "add":
           return last_target.push(data);
