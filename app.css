@@ -1,27 +1,108 @@
-html,
 body {
+    width: 100%;
+    height: 100%;
     margin: 0;
     padding: 0;
+    font-size: 1em;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: black;
+    color: white;
 }
+
+/* way the hell off screen */
+.scrollbar-measure {
+    width: 100px;
+    height: 100px;
+    overflow: scroll;
+    position: absolute;
+    top: -9999px;
+}
+
+#PageContainer {
+    width: 200%;
+    height: 100%;
+    overflow: hidden;
+}
+
+
 
 h2 {
     margin: 0;
     padding: 0;
 }
 
-#ConversationsListContainer {
+.header {
+    background: #a7cfdf; /* Old browsers */
+    background: -moz-linear-gradient(top,  #a7cfdf 0%, #23538a 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#a7cfdf), color-stop(100%,#23538a)); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(top,  #a7cfdf 0%,#23538a 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(top,  #a7cfdf 0%,#23538a 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(top,  #a7cfdf 0%,#23538a 100%); /* IE10+ */
+    background: linear-gradient(top,  #a7cfdf 0%,#23538a 100%); /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a7cfdf', endColorstr='#23538a',GradientType=0 ); /* IE6-9 */
+    text-align: center;
+    padding: 0.6em;
+    font-size: 1.2em;
+    color: white;
+}
+
+#Carousel {
+    width: 100%;
+}
+
+#ConversationsListContainer,
+#ConversationContainer {
+    width: 50%;
+    height: 100%;
     float: left;
-    width: 20%;
+}
+
+#ConversationsListContainer {
+
 }
 
 #ConversationContainer {
-    width: 80%;
-    margin-left: 20%;
+
 }
 
 
 
-#ConversationsList,
-#Conversation{
+#ConversationsListInner {
     padding: 1em;
+}
+#ConversationInner{
+    padding: 0.5em;
+}
+
+.conversation {
+    padding: 1em;
+    color: white;
+}
+
+.conversation .name {
+    font-size: 1em;
+    font-weight: normal;
+}
+
+
+
+.middle {
+    overflow-x: hidden;
+    overflow-y: scroll;
+    word-break: break-all;
+}
+
+#ConversationFooter {
+    background: #ccc;
+}
+
+
+ul,
+li{
+    margin: 0;
+    padding: 0;
+}
+
+li {
+    list-style-type: none;
 }

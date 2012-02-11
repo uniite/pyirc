@@ -134,26 +134,80 @@
 
   })();
 
+  $(window).resize(function() {
+    return reformat();
+  });
+
+  $(document).bind("scroll", function() {
+    if (window.scrollDone === true) {
+      window.scrollDone = false;
+      return;
+    }
+    if (window.scrollStopTimeout) clearTimeout(window.scrollStopTimeout);
+    window.scrollStopTimeout = setTimeout(window.scrollStop, 100);
+    return true;
+  });
+
+  window.scrollStop = function() {
+    var currentScrollLeft, maxLeft, snap;
+    snap = $(window).scrollLeft() - window.scrollSnapThreshold > 0;
+    console.warn("Snap!");
+    $("body").stop(true, false);
+    currentScrollLeft = $("body").scrollLeft();
+    maxLeft = $(window).width() - 2;
+    if (snap === true) {
+      if (Math.abs(currentScrollLeft - maxLeft) > 10) {
+        $("body").animate({
+          scrollLeft: maxLeft
+        }, 200);
+      } else {
+        $("body").scrollLeft(maxLeft);
+      }
+    } else if (snap === false) {
+      $("body").animate({
+        scrollLeft: 0
+      }, 200);
+    }
+    window.reformat();
+    return true;
+  };
+
+  window.reformat = function() {
+    $(".middle").height($(window).height() - $(".header")[0].clientHeight - $(".footer")[0].clientHeight);
+    return window.scrollSnapThreshold = $(window).width() / 2;
+  };
+
   $(function() {
     var _this = this;
+    $("body").height($(document).height());
+    $(window).bind("touchdown", function(e) {
+      $("body").stop(true, false);
+      return true;
+    });
+    $(window).bind("touchstart", function(e) {
+      $("body").stop(true, false);
+      return true;
+    });
+    $(window).bind("touchmove", function(e) {
+      $("body").stop(true, false);
+      return true;
+    });
+    window.reformat();
     return window.client = new JSONRPCClient({
-      url: "ws://127.0.0.1:8000/",
+      url: "ws://192.168.7.100:8000/",
       ready: function() {
         return client.getSession(function(result) {
           console.log("Got: ");
           console.log(result);
           window.session = new SessionModel(result);
-          return ko.applyBindings(window.session);
+          ko.applyBindings(window.session);
+          $(document).scrollLeft(0);
+          return window.reformat();
         });
       },
       notification: function(data) {
-        var shouldScroll;
-        shouldScroll = $(document).scrollTop() === ($(document).height() - $(window).height());
         console.log("Notification: " + data);
-        Util.applyDelta(session, data.delta);
-        if (shouldScroll) {
-          return $(document).scrollTop($(document).height() - $(window).height());
-        }
+        return Util.applyDelta(session, data.delta);
       },
       error: function(e) {
         console.log("Error!");

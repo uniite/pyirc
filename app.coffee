@@ -110,20 +110,74 @@ class SessionModel
 
 
 
+$(window).resize ->
+ reformat()
+
+$(document).bind "scroll", ->
+  if window.scrollDone == true
+    window.scrollDone = false
+    return
+  if window.scrollStopTimeout
+    clearTimeout(window.scrollStopTimeout)
+  window.scrollStopTimeout = setTimeout(window.scrollStop, 100)
+  return true
+
+window.scrollStop = ->
+  snap = $(window).scrollLeft() - window.scrollSnapThreshold > 0
+  console.warn "Snap!"
+  $("body").stop true, false
+  currentScrollLeft = $("body").scrollLeft()
+  maxLeft = $(window).width() - 2
+  if snap == true
+    if Math.abs(currentScrollLeft - maxLeft) > 10
+      $("body").animate scrollLeft: maxLeft, 200
+    else
+      $("body").scrollLeft(maxLeft)
+  else if snap == false
+    $("body").animate scrollLeft: 0, 200
+  window.reformat()
+  return true
+
+
+
+
+window.reformat = ->
+  $(".middle").height(
+    $(window).height() - $(".header")[0].clientHeight - $(".footer")[0].clientHeight
+  )
+  window.scrollSnapThreshold = $(window).width() / 2
+
+
+
 $ ->
+  $("body").height($(document).height())
+  $(window).bind "touchdown", (e) ->
+    $("body").stop true, false
+    return true
+  $(window).bind "touchstart", (e) ->
+    $("body").stop true, false
+    return true
+  $(window).bind "touchmove", (e) ->
+    $("body").stop true, false
+    return true
+  window.reformat()
+
   window.client = new JSONRPCClient
-    url: "ws://127.0.0.1:8000/",
+    url: "ws://192.168.7.100:8000/",
     ready: =>
       client.getSession (result) =>
         console.log "Got: "
         console.log result
         window.session = new SessionModel(result)
         ko.applyBindings window.session
+        $(document).scrollLeft 0
+        window.reformat()
+
     notification: (data) =>
-      shouldScroll = $(document).scrollTop() == ($(document).height() - $(window).height())
+      #shouldScroll = $(document).scrollTop() == ($(document).height() - $(window).height())
       console.log "Notification: " + data
       Util.applyDelta session, data.delta
-      $(document).scrollTop $(document).height() - $(window).height() if shouldScroll
+      #$(document).scrollTop $(document).height() - $(window).height() if shouldScroll
       #newViewModel = ko.mapping.fromJS({messages: data});
       #for message in newViewModel.messages()
       #  viewModel.messages.push message

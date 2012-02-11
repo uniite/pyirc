@@ -3,6 +3,8 @@ from gevent import Greenlet, sleep
 from gevent.pywsgi import WSGIServer
 from geventwebsocket import WebSocketError
 from geventwebsocket import WebSocketHandler
+from BaseHTTPServer import HTTPServer
+from SimpleHTTPServer import SimpleHTTPRequestHandler
 import json
 from server import Session, JSONEncoder, spam
 
@@ -130,6 +132,8 @@ def main():
     session = Session()
     session_greenlet = Greenlet.spawn(session.start)
     #spam_greenlet = Greenlet.spawn(spam, session)
+    http_server = HTTPServer(("", 8080), SimpleHTTPRequestHandler)
+    http_greenlet = Greenlet.spawn(http_server.serve_forever)
     WSGIServer(("", 8000), rpc_server, handler_class=WebSocketHandler).serve_forever()
 
 if __name__ == "__main__":
