@@ -96,15 +96,19 @@ class Util
 
 
 
-
-class ConversationModel
-  name: ko.observable()
-  messages: ko.observableArray([new Message("someguy", "hi"), new Message("me", "hello")])
-  addMessage: ->
-    @messages.push(new Message("someguy", "hmmm"))
-
 class SessionModel
-  name: ko.observable()
+  currentConversation: ko.observable()
+  outgoingMessage: ko.observable("")
+
+  constructor: (data) ->
+    ko.mapping.fromJS(data, {}, @);
+
+  sendMessage: ->
+    index = @.conversations().indexOf @.currentConversation()
+    window.client.sendMessage index, @.outgoingMessage()
+    @.outgoingMessage("")
+
+
 
 $ ->
   window.client = new JSONRPCClient
@@ -113,8 +117,8 @@ $ ->
       client.getSession (result) =>
         console.log "Got: "
         console.log result
-        window.session = ko.mapping.fromJS(result);
-        ko.applyBindings session
+        window.session = new SessionModel(result)
+        ko.applyBindings window.session
     notification: (data) =>
       shouldScroll = $(document).scrollTop() == ($(document).height() - $(window).height())
       console.log "Notification: " + data

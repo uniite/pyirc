@@ -108,6 +108,8 @@ class IRCConnection(irclib.SimpleIRCClient):
     def on_dccmsg(self, c, e):
         self.session.on_message("DCCMSG %s" % " | ".join([e.eventtype(), e.source(), e.target(), str(e.arguments())]))
 
+    def send_message(self, message):
+        self.connection.privmsg(message.conversation.name, message.body)
 
     def __str__(self):
         return "<IRCConnection(%s, %s)>" % (id(self), self.server_list[0][0])

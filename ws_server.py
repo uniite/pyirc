@@ -4,17 +4,21 @@ from gevent.pywsgi import WSGIServer
 from geventwebsocket import WebSocketError
 from geventwebsocket import WebSocketHandler
 import json
-from server import Session, JSONEncoder
+from server import Session, JSONEncoder, spam
 
 
 class RPCService(object):
     @classmethod
     def listMethods(cls):
-        return ["getConversations", "getMessages", "shout", "getSession"]
+        return ["getConversations", "getMessages", "sendMessage", "getSession"]
 
     @classmethod
     def getConversations(cls):
         return session.conversations.values()
+
+    @classmethod
+    def sendMessage(cls, conversation_id, message):
+        return session.send_message(conversation_id, message)
 
     @classmethod
     def getSession(cls):
@@ -26,10 +30,6 @@ class RPCService(object):
         for conv in session.conversations.values():
             messages.extend(conv.messages)
         return messages
-
-    @classmethod
-    def shout(cls, name):
-        return "HEY %s!" % name
 
 def rpc_server(environ, start_response):
     websocket = environ.get("wsgi.websocket")
@@ -129,6 +129,7 @@ def main():
     global session
     session = Session()
     session_greenlet = Greenlet.spawn(session.start)
+    #spam_greenlet = Greenlet.spawn(spam, session)
     WSGIServer(("", 8000), rpc_server, handler_class=WebSocketHandler).serve_forever()
 
 if __name__ == "__main__":

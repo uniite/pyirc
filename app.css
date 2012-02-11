@@ -1,0 +1,27 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+h2 {
+    margin: 0;
+    padding: 0;
+}
+
+#ConversationsListContainer {
+    float: left;
+    width: 20%;
+}
+
+#ConversationContainer {
+    width: 80%;
+    margin-left: 20%;
+}
+
+
+
+#ConversationsList,
+#Conversation{
+    padding: 1em;
+}

@@ -1,8 +1,13 @@
 #! /usr/bin/env python
+
+# BUGS
+# - Subscription.cancel on ws_server fails
+# - Message body: UnicodeDecodeError: 'utf8' codec can't decode byte 0x95 in position 0: invalid start byte
+
 import gevent.monkey
 gevent.monkey.patch_all()
 
-from gevent import Greenlet
+from gevent import Greenlet, sleep
 from irc_connection import IRCConnection
 from observable import SimpleObservable, ObservableList, ObservableDict
 
@@ -63,8 +68,14 @@ class Conversation(JSONSerializable, SimpleObservable):
         #self.messages.subscribe("add", self.new_message)
         #self.messages.subscribe("remove", self.delete_message)
 
-    def new_message(self, message):
-        print "[Conv:%s] %s" % (self.name, message)
+    def recv_message(self, message):
+        message.id = len(self.messages)
+        self.messages.append(message)
+
+    def send_message(self, message):
+        message.id = len(self.messages)
+        self.messages.append(message)
+        self.connection.send_message(message)
 
     def delete_message(self, index, message):
         raise Exception("Message deletion not allowed!")
@@ -101,19 +112,29 @@ class Session(SimpleObservable, JSONSerializable):
             conv = Conversation(conv_name, connection, {})
             self.conversations.append(conv)
             self.conversation_lookup[conv_key] = conv
-        conv.messages.append(Message(len(conv.messages), username, message, conv))
+        conv.recv_message(Message(None, username, message, conv))
+
+    def send_message(self, conversation_id, message):
+        conv = self.conversations[conversation_id]
+        conv.send_message(Message(None, "me", message, conv))
 
     def start(self):
-        irc = IRCConnection(self, [("irc.freenode.org", 6667)], "pyguybot", "pyguybot")
+        irc = IRCConnection(self, [("irc.freenode.org", 6667)], "python_phone", "python_phone")
         self.connections["irc"] = irc
         print "Connecting..."
         irc.start()
 
+def spam(session):
+    i = 0
+    while True:
+        i += 1
+        session.recv_message({}, "spambot", "SPAM %s" % i, "testchat")
+        sleep(0.05)
 
 def main():
     session = Session()
     session_greenlet = Greenlet.spawn(session.start)
-    session_greenlet.join()
+    spam_greenlet.join()
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,5 @@
 (function() {
-  var ConversationModel, JSONRPCClient, Message, SessionModel, Util;
+  var JSONRPCClient, Message, SessionModel, Util;
 
   JSONRPCClient = (function() {
 
@@ -113,27 +113,22 @@
 
   })();
 
-  ConversationModel = (function() {
-
-    function ConversationModel() {}
-
-    ConversationModel.prototype.name = ko.observable();
-
-    ConversationModel.prototype.messages = ko.observableArray([new Message("someguy", "hi"), new Message("me", "hello")]);
-
-    ConversationModel.prototype.addMessage = function() {
-      return this.messages.push(new Message("someguy", "hmmm"));
-    };
-
-    return ConversationModel;
-
-  })();
-
   SessionModel = (function() {
 
-    function SessionModel() {}
+    SessionModel.prototype.currentConversation = ko.observable();
 
-    SessionModel.prototype.name = ko.observable();
+    SessionModel.prototype.outgoingMessage = ko.observable("");
+
+    function SessionModel(data) {
+      ko.mapping.fromJS(data, {}, this);
+    }
+
+    SessionModel.prototype.sendMessage = function() {
+      var index;
+      index = this.conversations().indexOf(this.currentConversation());
+      window.client.sendMessage(index, this.outgoingMessage());
+      return this.outgoingMessage("");
+    };
 
     return SessionModel;
 
@@ -147,8 +142,8 @@
         return client.getSession(function(result) {
           console.log("Got: ");
           console.log(result);
-          window.session = ko.mapping.fromJS(result);
-          return ko.applyBindings(session);
+          window.session = new SessionModel(result);
+          return ko.applyBindings(window.session);
         });
       },
       notification: function(data) {
