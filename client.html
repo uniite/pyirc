@@ -7,7 +7,9 @@
     <script src="jquery.mobile.carousel.js" type="text/javascript"></script>
     <script src="jquery.ui.touch-punch.min.js" type="text/javascript"></script>
     <script src="jquery.getscrollbarwidth.js" type="text/javascript"></script>
+    <script src="websocket.js" type="text/javascript"></script>
     <script src="app.js" type="text/javascript"></script>
+    <link href="css/bootstrap.min.css" type="text/css" rel="stylesheet" />
     <link href="app.css" type="text/css" rel="stylesheet" />
     <meta name="viewport" content="width=320, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
 </head>
@@ -16,7 +18,9 @@
     <ul id="Carousel">
         <div id="ConversationsListContainer" class="section">
             <div id="ConversationsList">
-                <div class="header">Conversations</div>
+                <div class="header">
+                    <div class="inner">Conversations</div>
+                </div>
                 <div id="ConversationListInner">
                     <div data-bind="foreach: conversations">
                         <div class="conversation" data-bind="click: $root.currentConversation">
@@ -30,7 +34,9 @@
         <div id="ConversationContainer" class="section">
             <div id="Conversation">
                 <!-- ko with: currentConversation -->
-                    <div class="header" data-bind="text: name">Conversations</div>
+                    <div class="header">
+                        <div class="inner" data-bind="text: name"></div>
+                    </div>
                     <div id="ConversationInner" class="middle">
                         <div id="MessagesList" data-bind="foreach: messages">
                             <div class="message">
@@ -42,8 +48,16 @@
                     </div>
                 <!-- /ko -->
                 <div id="ConversationFooter" class="footer" data-bind="if: currentConversation">
-                    <input type="text" data-bind="value: $root.outgoingMessage" />
-                    <button data-bind="click: $root.sendMessage">Send</button>
+                    <div class="inner-left">
+                        <input type="text" data-bind="value: $root.outgoingMessage" />
+                    </div>
+                    <div class="inner-right">
+                        <button id="SendMessage" class="btn btn-primary"
+                                type="submit"
+                                data-bind="click: $root.sendMessage">
+                            Send
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

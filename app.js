@@ -31,6 +31,7 @@
           return delete _this.callbacks[response.id];
         }
       };
+      this.ws.onclose = this.options.error;
       this.ws.onerror = this.options.error;
     }
 
@@ -135,7 +136,8 @@
   })();
 
   $(window).resize(function() {
-    return reformat();
+    reformat();
+    return window.scrollSnap();
   });
 
   $(document).bind("scroll", function() {
@@ -144,17 +146,17 @@
       return;
     }
     if (window.scrollStopTimeout) clearTimeout(window.scrollStopTimeout);
-    window.scrollStopTimeout = setTimeout(window.scrollStop, 100);
+    window.scrollStopTimeout = setTimeout(window.scrollSnap, 100);
     return true;
   });
 
-  window.scrollStop = function() {
+  window.scrollSnap = function() {
     var currentScrollLeft, maxLeft, snap;
     snap = $(window).scrollLeft() - window.scrollSnapThreshold > 0;
     console.warn("Snap!");
     $("body").stop(true, false);
     currentScrollLeft = $("body").scrollLeft();
-    maxLeft = $(window).width() - 2;
+    maxLeft = $(window).width();
     if (snap === true) {
       if (Math.abs(currentScrollLeft - maxLeft) > 10) {
         $("body").animate({
@@ -173,13 +175,14 @@
   };
 
   window.reformat = function() {
-    $(".middle").height($(window).height() - $(".header")[0].clientHeight - $(".footer")[0].clientHeight);
-    return window.scrollSnapThreshold = $(window).width() / 2;
+    var windowWidth;
+    windowWidth = $(window).width();
+    $(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width());
+    return window.scrollSnapThreshold = windowWidth / 2;
   };
 
   $(function() {
     var _this = this;
-    $("body").height($(document).height());
     $(window).bind("touchdown", function(e) {
       $("body").stop(true, false);
       return true;
@@ -210,7 +213,7 @@
         return Util.applyDelta(session, data.delta);
       },
       error: function(e) {
-        console.log("Error!");
+        console.log("Error: " + JSON.stringify(e));
         throw e;
       }
     });

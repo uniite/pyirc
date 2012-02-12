@@ -30,6 +30,7 @@ class JSONRPCClient
         @callbacks[response.id](response.result)
         delete @callbacks[response.id]
 
+    @ws.onclose = @options.error
     @ws.onerror = @options.error
 
   _updateMethods: (methods) ->
@@ -112,6 +113,7 @@ class SessionModel
 
 $(window).resize ->
  reformat()
+ window.scrollSnap()
 
 $(document).bind "scroll", ->
   if window.scrollDone == true
@@ -119,15 +121,15 @@ $(document).bind "scroll", ->
     return
   if window.scrollStopTimeout
     clearTimeout(window.scrollStopTimeout)
-  window.scrollStopTimeout = setTimeout(window.scrollStop, 100)
+  window.scrollStopTimeout = setTimeout(window.scrollSnap, 100)
   return true
 
-window.scrollStop = ->
+window.scrollSnap = ->
   snap = $(window).scrollLeft() - window.scrollSnapThreshold > 0
   console.warn "Snap!"
   $("body").stop true, false
   currentScrollLeft = $("body").scrollLeft()
-  maxLeft = $(window).width() - 2
+  maxLeft = $(window).width()
   if snap == true
     if Math.abs(currentScrollLeft - maxLeft) > 10
       $("body").animate scrollLeft: maxLeft, 200
@@ -142,15 +144,13 @@ window.scrollStop = ->
 
 
 window.reformat = ->
-  $(".middle").height(
-    $(window).height() - $(".header")[0].clientHeight - $(".footer")[0].clientHeight
-  )
-  window.scrollSnapThreshold = $(window).width() / 2
+  windowWidth = $(window).width()
+  $(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width())
+  window.scrollSnapThreshold = windowWidth / 2
 
 
 
 $ ->
-  $("body").height($(document).height())
   $(window).bind "touchdown", (e) ->
     $("body").stop true, false
     return true
@@ -182,4 +182,4 @@ $ ->
       #for message in newViewModel.messages()
       #  viewModel.messages.push message
 
-    error: (e) => console.log "Error!"; throw e;
+    error: (e) => console.log "Error: " + JSON.stringify(e); throw e;
