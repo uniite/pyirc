@@ -2,11 +2,20 @@
 <head>
     <script src="jquery-1.7.1.min.js" type="text/javascript"></script>
     <script src="jquery-ui-1.8.17.custom.min.js" type="text/javascript"></script>
-    <script src="knockout-2.0.0.js" type="text/javascript"></script>
+    <script src="knockout-2.1.0pre.js" type="text/javascript"></script>
     <script src="knockout.mapping-2.0.1.js" type="text/javascript"></script>
     <script src="jquery.mobile.carousel.js" type="text/javascript"></script>
     <script src="jquery.ui.touch-punch.min.js" type="text/javascript"></script>
     <script src="jquery.getscrollbarwidth.js" type="text/javascript"></script>
+    <script src="knockout-repeat.js" type="text/javascript"></script>
+    <script>
+        ko.cloneNodeNativeTemplateEngine = function () { }
+        ko.cloneNodeNativeTemplateEngine.prototype = new ko.nativeTemplateEngine();
+        ko.cloneNodeNativeTemplateEngine.prototype['renderTemplateSource'] = function (templateSource) {
+            var node = 'nodes' in templateSource && templateSource['nodes']();
+            return node ? ko.utils.arrayPushAll([], node.cloneNode(true).childNodes) : ko.utils.parseHtmlFragment(templateSource['text']());
+        };
+    </script>
     <script src="websocket.js" type="text/javascript"></script>
     <script src="app.js" type="text/javascript"></script>
     <link href="css/bootstrap.min.css" type="text/css" rel="stylesheet" />
@@ -21,12 +30,12 @@
                 <div class="header">
                     <div class="inner">Conversations</div>
                 </div>
-                <div id="ConversationListInner">
-                    <div data-bind="foreach: conversations">
-                        <div class="conversation" data-bind="click: $root.currentConversation">
-                            <span class="name" data-bind="text: name"></span>
-                        </div>
-                        <br />
+                <div id="ConversationListInner" class="scrollable"
+                     data-bind="foreach: conversations">
+                    <div class="conversation"
+                         data-bind="event: { mouseup: $root.openConversation}, css: { selected: $root.currentConversation() == $data }"
+                         >
+                        <span class="name" data-bind="text: name"></span>
                     </div>
                 </div>
             </div>
@@ -42,7 +51,6 @@
                             <div class="message">
                                 <strong><span data-bind="text: sender"></span>: </strong>
                                 <span data-bind="text: body"></span>
-                                (rendered at <span data-bind='text: new Date().getSeconds()' > </span>)
                             </div>
                         </div>
                     </div>
@@ -57,6 +65,19 @@
                                 data-bind="click: $root.sendMessage">
                             Send
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="UsersListContainer" class="section">
+            <div id="UsersList">
+                <div class="header">
+                    <div class="inner">Users</div>
+                </div>
+                <div id="UsersListInner" class="scrollable"
+                     data-bind="with: currentConversation">
+                    <div class="user"
+                         data-bind="repeat: {foreach: users, bind: 'text: $item()'}">
                     </div>
                 </div>
             </div>

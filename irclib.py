@@ -71,7 +71,7 @@ import time
 import types
 
 VERSION = 0, 4, 8
-DEBUG = 0
+DEBUG = 1
 
 # TODO
 # ----
@@ -1451,7 +1451,7 @@ numeric_events = {
     "349": "endofexceptlist",
     "351": "version",
     "352": "whoreply",
-    "353": "namreply",
+    "353": "namereply",
     "361": "killdone",
     "362": "closing",
     "363": "closeend",

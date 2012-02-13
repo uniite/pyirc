@@ -20,7 +20,7 @@ body {
 }
 
 #PageContainer {
-    width: 200%;
+    width: 300%;
     height: 100%;
     overflow: hidden;
 }
@@ -42,14 +42,14 @@ h2 {
     background: linear-gradient(top,  #7d7e7d 0%,#0e0e0e 100%); /* W3C */
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#7d7e7d', endColorstr='#0e0e0e',GradientType=0 ); /* IE6-9 */
 
-
-    text-align: center;
-    font-size: 1.2em;
     color: white;
     height: 3em;
+    text-align: center;
 }
 
 .header .inner {
+    font-size: 1.2em;
+
     padding: 0.6em;
     padding-top: 0.8em;
 }
@@ -59,10 +59,12 @@ h2 {
 }
 
 #ConversationsListContainer,
-#ConversationContainer {
-    width: 50%;
-    height: 100%;
+#ConversationContainer,
+#UsersListContainer {
     float: left;
+    height: 100%;
+    width: 33.333%;
+    user-select: none;
 }
 
 #ConversationsListContainer {
@@ -81,28 +83,48 @@ h2 {
     padding: 0.5em;
 }
 
-.conversation {
+.conversation,
+.user {
     padding: 1em;
     color: white;
+    border-bottom: solid #406f8a 1px;
 }
 
-.conversation .name {
+.conversation:hover {
+    background: #073f52;
+}
+
+.conversation .name,
+.user .name {
     font-size: 1em;
     font-weight: normal;
 }
 
+.selected,
+.selected2 {
+    background: #167799;
+}
 
 
-.middle {
+.middle,
+.scrollable {
     position: absolute;
-    top: 3em;
-    bottom: 2.7em;
-
-    width: 100%;
 
     overflow-x: hidden;
     overflow-y: scroll;
     word-break: break-all;
+
+    width: 100%;
+}
+
+.middle {
+    top: 3em;
+    bottom: 2.7em;
+}
+
+.scrollable {
+    top: 3em;
+    bottom: 0;
 }
 
 .footer {

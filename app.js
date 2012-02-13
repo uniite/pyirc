@@ -1,5 +1,6 @@
 (function() {
-  var JSONRPCClient, Message, SessionModel, Util;
+  var JSONRPCClient, Message, SessionModel, Util,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   JSONRPCClient = (function() {
 
@@ -20,7 +21,7 @@
       };
       this.ws.onmessage = function(e) {
         var response;
-        console.log(e.data);
+        console.log("RESPONSE " + e.data);
         response = JSON.parse(e.data);
         if (response.notification) {
           if (_this.options && typeof _this.options.notification === "function") {
@@ -85,7 +86,6 @@
 
     Util.applyDelta = function(target, delta) {
       var data, key, last_key, last_target, _i, _len, _ref;
-      console.log(delta);
       last_key = delta.target.pop();
       _ref = delta.target;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -116,12 +116,16 @@
 
   SessionModel = (function() {
 
-    SessionModel.prototype.currentConversation = ko.observable();
-
-    SessionModel.prototype.outgoingMessage = ko.observable("");
-
     function SessionModel(data) {
+      this.openConversation = __bind(this.openConversation, this);
+      this.sendMessage = __bind(this.sendMessage, this);
+      var _this = this;
       ko.mapping.fromJS(data, {}, this);
+      this.currentConversationIndex = ko.observable(0);
+      this.outgoingMessage = ko.observable("");
+      this.currentConversation = ko.computed(function() {
+        return _this.conversations()[_this.currentConversationIndex()];
+      });
     }
 
     SessionModel.prototype.sendMessage = function() {
@@ -129,6 +133,15 @@
       index = this.conversations().indexOf(this.currentConversation());
       window.client.sendMessage(index, this.outgoingMessage());
       return this.outgoingMessage("");
+    };
+
+    SessionModel.prototype.openConversation = function(conversation) {
+      var index, start;
+      index = conversation.index();
+      start = (new Date).getTime();
+      index = this.currentConversationIndex(index);
+      console.log("TOOK " + ((new Date).getTime() - start));
+      return scrollNext();
     };
 
     return SessionModel;
@@ -150,35 +163,55 @@
     return true;
   });
 
+  window.scrollSnapEnabled = true;
+
+  window.scrollNext = function() {
+    return scrollToPane(currentPane() + 1);
+  };
+
+  window.currentPane = function() {
+    return $("body").scrollLeft() / $(window).width();
+  };
+
+  window.scrollToPane = function(pane) {
+    var targetX;
+    targetX = $(window).width() * pane;
+    $("body").stop(true, true);
+    return $("body").animate({
+      scrollLeft: targetX
+    }, {
+      duration: 200
+    });
+  };
+
   window.scrollSnap = function() {
-    var currentScrollLeft, maxLeft, snap;
-    snap = $(window).scrollLeft() - window.scrollSnapThreshold > 0;
+    var closerToLeft, leftPaneX, rightPaneX, scrollX, targetX, windowWidth;
+    if (!window.scrollSnapEnabled) return;
     console.warn("Snap!");
-    $("body").stop(true, false);
-    currentScrollLeft = $("body").scrollLeft();
-    maxLeft = $(window).width();
-    if (snap === true) {
-      if (Math.abs(currentScrollLeft - maxLeft) > 10) {
-        $("body").animate({
-          scrollLeft: maxLeft
-        }, 200);
-      } else {
-        $("body").scrollLeft(maxLeft);
-      }
-    } else if (snap === false) {
-      $("body").animate({
-        scrollLeft: 0
-      }, 200);
+    windowWidth = $(window).width();
+    scrollX = $(window).scrollLeft();
+    leftPaneX = Math.floor(scrollX / windowWidth) * windowWidth;
+    rightPaneX = leftPaneX + windowWidth;
+    closerToLeft = ((scrollX - leftPaneX) - (windowWidth / 2)) < 0;
+    if (closerToLeft) {
+      targetX = leftPaneX;
+    } else {
+      targetX = rightPaneX;
     }
-    window.reformat();
-    return true;
+    if (Math.abs(scrollX - targetX) < 10) {
+      $("body").scrollLeft(targetX);
+    } else {
+      scrollToPane(targetX / windowWidth);
+    }
+    return window.reformat();
   };
 
   window.reformat = function() {
     var windowWidth;
     windowWidth = $(window).width();
     $(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width());
-    return window.scrollSnapThreshold = windowWidth / 2;
+    window.scrollSnapThreshold = windowWidth / 2;
+    return true;
   };
 
   $(function() {
@@ -199,9 +232,9 @@
     return window.client = new JSONRPCClient({
       url: "ws://192.168.7.100:8000/",
       ready: function() {
+        console.log("Ready callback");
         return client.getSession(function(result) {
-          console.log("Got: ");
-          console.log(result);
+          console.log("Got Session");
           window.session = new SessionModel(result);
           ko.applyBindings(window.session);
           $(document).scrollLeft(0);

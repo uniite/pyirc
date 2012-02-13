@@ -16,7 +16,7 @@ class JSONRPCClient
 
     # When we get a WebSocket message...
     @ws.onmessage = (e) =>
-      console.log e.data
+      console.log("RESPONSE " + e.data)
       # Parse the response
       response = JSON.parse(e.data)
 
@@ -69,7 +69,6 @@ class Message
 
 class Util
   @applyDelta: (target, delta) ->
-    console.log(delta)
     # Figure out what the target of the delta is,
     # which will be based off of target
     last_key = delta.target.pop()
@@ -98,16 +97,25 @@ class Util
 
 
 class SessionModel
-  currentConversation: ko.observable()
-  outgoingMessage: ko.observable("")
-
   constructor: (data) ->
-    ko.mapping.fromJS(data, {}, @);
+    ko.mapping.fromJS(data, {}, @)
+    @.currentConversationIndex = ko.observable(0)
+    @.outgoingMessage = ko.observable("")
+    @.currentConversation = ko.computed =>
+      @.conversations()[@.currentConversationIndex()]
 
-  sendMessage: ->
+  sendMessage: =>
     index = @.conversations().indexOf @.currentConversation()
     window.client.sendMessage index, @.outgoingMessage()
     @.outgoingMessage("")
+
+  openConversation: (conversation) =>
+    index = conversation.index()
+    start = (new Date).getTime();
+    index = @.currentConversationIndex(index)
+    console.log("TOOK " + ((new Date).getTime() - start))
+    scrollNext()
+    #$("body").animate scrollLeft: "+" + ($(window).width() * 2), 0
 
 
 
@@ -124,21 +132,51 @@ $(document).bind "scroll", ->
   window.scrollStopTimeout = setTimeout(window.scrollSnap, 100)
   return true
 
+window.scrollSnapEnabled = true
+window.scrollNext = ->
+  scrollToPane(currentPane() + 1)
+
+
+window.currentPane = ->
+  return $("body").scrollLeft() / $(window).width()
+
+window.scrollToPane = (pane) ->
+  targetX = $(window).width() * pane
+  # First, cancel any animations currently running on the body
+  # (most likely previous snap animations)
+  $("body").stop(true, true)
+  $("body").animate scrollLeft: targetX,
+    duration: 200
+
+
 window.scrollSnap = ->
-  snap = $(window).scrollLeft() - window.scrollSnapThreshold > 0
+  return unless window.scrollSnapEnabled
   console.warn "Snap!"
-  $("body").stop true, false
-  currentScrollLeft = $("body").scrollLeft()
-  maxLeft = $(window).width()
-  if snap == true
-    if Math.abs(currentScrollLeft - maxLeft) > 10
-      $("body").animate scrollLeft: maxLeft, 200
-    else
-      $("body").scrollLeft(maxLeft)
-  else if snap == false
-    $("body").animate scrollLeft: 0, 200
+
+  # Figure the X coordinates of the nearest panes to the left and right
+  windowWidth = $(window).width()
+  scrollX = $(window).scrollLeft()
+  leftPaneX = Math.floor(scrollX / windowWidth) * windowWidth
+  rightPaneX = leftPaneX + windowWidth
+  # Figure out pane we're closer to
+  closerToLeft = ((scrollX - leftPaneX) - (windowWidth / 2)) < 0
+
+  # Get the X coordinate of the pane we need to snap to
+  if closerToLeft
+    targetX = leftPaneX
+  else
+    targetX = rightPaneX
+
+  # Do the actual snapping
+  # If the distance we need to scroll is fairly small, don't bother animating.
+  if Math.abs(scrollX - targetX) < 10
+    $("body").scrollLeft(targetX)
+  # Otherwise, do a quick animation
+  else
+    scrollToPane(targetX / windowWidth)
+
+  # Refresh the page formatting
   window.reformat()
-  return true
 
 
 
@@ -147,6 +185,7 @@ window.reformat = ->
   windowWidth = $(window).width()
   $(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width())
   window.scrollSnapThreshold = windowWidth / 2
+  true
 
 
 
@@ -165,9 +204,10 @@ $ ->
   window.client = new JSONRPCClient
     url: "ws://192.168.7.100:8000/",
     ready: =>
+      console.log "Ready callback"
       client.getSession (result) =>
-        console.log "Got: "
-        console.log result
+        console.log "Got Session"
+        #console.log result
         window.session = new SessionModel(result)
         ko.applyBindings window.session
         $(document).scrollLeft 0

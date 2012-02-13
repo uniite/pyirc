@@ -1,17 +1,11 @@
 import irclib
 
 class IRCConnection(irclib.SimpleIRCClient):
-    """A single-server IRC bot class.
-
-    The bot tries to reconnect if it is disconnected.
-
-    The bot keeps track of the channels it has joined, the other
-    clients that are present in the channels and which of those that
-    have operator or voice modes.  The "database" is kept in the
-    self.channels attribute, which is an IRCDict of Channels.
+    """
+    A simple wrapper for python-irclib.
     """
     def __init__(self, session, server_list, nickname, realname, reconnection_interval=60):
-        """Constructor for SingleServerIRCBot objects.
+        """Constructor for IRCConnection objects.
 
         Arguments:
 
@@ -47,12 +41,14 @@ class IRCConnection(irclib.SimpleIRCClient):
                                                getattr(self, "_on_" + i),
                                                -10)
 
+
     def _connected_checker(self):
         """[Internal]"""
         if not self.connection.is_connected():
             self.connection.execute_delayed(self.reconnection_interval,
                                             self._connected_checker)
             self.jump_server()
+
 
     def _connect(self):
         """[Internal]"""
@@ -68,54 +64,98 @@ class IRCConnection(irclib.SimpleIRCClient):
         except ServerConnectionError:
             pass
 
+
     def _on_disconnect(self, c, e):
         """[Internal]"""
         self.channels = {}
         self.connection.execute_delayed(self.reconnection_interval,
                                         self._connected_checker)
 
-    def disconnect(self, msg="I'll be back!"):
-        """Disconnect the bot.
+    def disconnect(self, quit_message):
+        """ End the connection. """
+        self.connection.disconnect(quit_message)
 
-        The bot will try to reconnect after a while.
 
-        Arguments:
 
-            msg -- Quit message.
-        """
-        self.connection.disconnect(msg)
-    
-    def on_welcome(self, c, e):
-        print "Connected!"
-        c.join("#pyguybot_test")
+    ## Various IRC event handlers #############################################
 
+    def on_join(self, c, e):
+        """ Called when a user joins a channel we're in. """
+        username, channel = self.parse_event(e)
+        # We have joined a channel
+        if username == self.connection.get_nickname():
+            self.session.new_conversation(channel, self)
+        # Someone else has joined a channel we're in
+        else:
+            self.session.user_joined_conversation(self, username, channel)
+
+    def on_namereply(self, c, e):
+        """ Called to give us a list of users in a channel. """
+        args = e.arguments()
+        channel = args[1]
+        users = args[2].split(" ")
+        conversation = self.session.get_conversation(self, channel)
+        for u in users:
+            conversation.users.append(u)
+
+    def on_part(self, c, e):
+        """ Called when a user leaves a channel we're in. """
+        username, channel = self.parse_event(e)
+        self.session.user_left_conversation(self, username, channel)
 
     def on_privmsg(self, c, e):
+        """ Called when a channel-specific/private message is received. """
         self._on_message(e)
 
     def on_pubmsg(self, c, e):
+        """ Called when a global/public message is received. """
         self._on_message(e)
 
-    def _on_message(self, e):
-        username = irclib.nm_to_n(e.source())
-        message = e.arguments()[0]
-        if irclib.is_channel(e.target()):
-            chatroom = e.target()
-        else:
-            chatroom = None
-        self.session.recv_message(self, username, message, chatroom)
+    def on_welcome(self, c, e):
+        """ Called when the connection is ready. """
+        for channel in ["#pyguybot_test", "#/r/nyc"]:
+            c.join(channel)
 
-    def on_dccmsg(self, c, e):
-        self.session.on_message("DCCMSG %s" % " | ".join([e.eventtype(), e.source(), e.target(), str(e.arguments())]))
+
+
+    def parse_event(self, e):
+        """ Get the username and channel from an irclib event. """
+
+        # Extract the username from the IRC sender string
+        username = irclib.nm_to_n(e.source())
+        # See if this is a channel or private message
+        if irclib.is_channel(e.target()):
+            channel = e.target()
+        else:
+            channel = None
+
+        return username, channel
+
+
+    def _on_message(self, e):
+        """ The general-purpose message handler. """
+
+        # Parse out the message info
+        username, channel = self.parse_event(e)
+        message = e.arguments()[0]
+        # Pass off the message to the session's callback
+        self.session.recv_message(self, username, message, channel)
+
 
     def send_message(self, message):
+        """ Sends a Message. """
+
         self.connection.privmsg(message.conversation.name, message.body)
 
+
     def __str__(self):
+        """ Returns a string repesentation of this IRCConnection. """
+
         return "<IRCConnection(%s, %s)>" % (id(self), self.server_list[0][0])
 
 
     def start(self):
-        """Start the bot."""
+        """ Start the connection. """
+
         self._connect()
         irclib.SimpleIRCClient.start(self)

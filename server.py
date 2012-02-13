@@ -57,14 +57,16 @@ class Message(JSONSerializable):
         )
 
 class Conversation(JSONSerializable, SimpleObservable):
-    _json_attrs = ["name", "topic", "messages"]
+    _json_attrs = ["name", "topic", "messages", "users", "index"]
     def __init__(self, name, connection, users=None):
         SimpleObservable.__init__(self)
         self.name = name
         self.connection = connection
-        self.users = users or {}
+        self.users = users or []
+        self.users = ObservableList(*users)
         self.topic = ""
         self.messages = ObservableList()
+        self.index = None
         #self.messages.subscribe("add", self.new_message)
         #self.messages.subscribe("remove", self.delete_message)
 
@@ -87,31 +89,42 @@ class DiffGenerator(object):
             pass
 
 class Session(SimpleObservable, JSONSerializable):
-    _json_attrs = ["conversations"]
+    _json_attrs = ["conversations", "users"]
     def __init__(self):
         self.connections = {} #ObservableDict()
-        self.users = {} #ObservableDict()
+        self.users = ObservableList()
         self.conversations = ObservableList()
         self.conversation_lookup = {}
 
-    def get_conversation(self, key):
-        if self.conversations.has_key(key):
-            return self.conversations[key]
-        else:
-            return None
+    def conversation_key(self, connection, name):
+        return "%s@%s" % (name, connection)
+
+    def get_conversation(self, connection, name):
+        return self.conversation_lookup.get(self.conversation_key(connection, name))
+
+    def new_conversation(self, name, connection):
+        conv = Conversation(name, connection, {})
+        conv.index = len(self.conversations)
+        self.conversations.append(conv)
+        self.conversation_lookup[self.conversation_key(connection, name)] = conv
+        self.last_key = self.conversation_key(connection, name)
+        return conv
+
+    def user_joined_conversation(self, connection, username, chatroom):
+        self.get_conversation(connection, chatroom).users.append(username)
+
+    def user_left_conversation(self, connection, username, chatroom):
+        self.get_conversation(connection, chatroom).users.remove(username)
+
 
     def recv_message(self, connection, username, message, chatroom=None):
         if chatroom:
             conv_name = chatroom
-
         else:
             conv_name = username
-        conv_key = "%s@%s" % (conv_name, connection)
-        conv = self.conversation_lookup.get(conv_key)
+        conv = self.get_conversation(connection, conv_name)
         if not conv:
-            conv = Conversation(conv_name, connection, {})
-            self.conversations.append(conv)
-            self.conversation_lookup[conv_key] = conv
+            conv = self.create_conversation(connection, conv_name)
         conv.recv_message(Message(None, username, message, conv))
 
     def send_message(self, conversation_id, message):
