@@ -141,6 +141,7 @@
       start = (new Date).getTime();
       index = this.currentConversationIndex(index);
       console.log("TOOK " + ((new Date).getTime() - start));
+      autoScrollMessages();
       return scrollNext();
     };
 
@@ -184,6 +185,20 @@
     });
   };
 
+  window.messagesScrolledToBottom = function() {
+    var scrollContainer, scrollTarget;
+    scrollContainer = $("#ConversationInner");
+    scrollTarget = $("#MessagesList");
+    return scrollContainer.scrollTop() === (scrollTarget.height() - scrollContainer.height());
+  };
+
+  window.autoScrollMessages = function() {
+    var scrollContainer, scrollTarget;
+    scrollContainer = $("#ConversationInner");
+    scrollTarget = $("#MessagesList");
+    return scrollContainer.scrollTop(scrollTarget.height() - scrollContainer.height());
+  };
+
   window.scrollSnap = function() {
     var closerToLeft, leftPaneX, rightPaneX, scrollX, targetX, windowWidth;
     if (!window.scrollSnapEnabled) return;
@@ -211,6 +226,7 @@
     windowWidth = $(window).width();
     $(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width());
     window.scrollSnapThreshold = windowWidth / 2;
+    autoScrollMessages();
     return true;
   };
 
@@ -230,7 +246,7 @@
     });
     window.reformat();
     return window.client = new JSONRPCClient({
-      url: "ws://192.168.7.100:8000/",
+      url: "ws://shoebox.jbotelho.com:42450/",
       ready: function() {
         console.log("Ready callback");
         return client.getSession(function(result) {
@@ -242,8 +258,11 @@
         });
       },
       notification: function(data) {
+        var shouldScroll;
         console.log("Notification: " + data);
-        return Util.applyDelta(session, data.delta);
+        shouldScroll = messagesScrolledToBottom();
+        Util.applyDelta(session, data.delta);
+        if (shouldScroll) return autoScrollMessages();
       },
       error: function(e) {
         console.log("Error: " + JSON.stringify(e));

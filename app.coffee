@@ -114,6 +114,7 @@ class SessionModel
     start = (new Date).getTime();
     index = @.currentConversationIndex(index)
     console.log("TOOK " + ((new Date).getTime() - start))
+    autoScrollMessages()
     scrollNext()
     #$("body").animate scrollLeft: "+" + ($(window).width() * 2), 0
 
@@ -147,6 +148,17 @@ window.scrollToPane = (pane) ->
   $("body").stop(true, true)
   $("body").animate scrollLeft: targetX,
     duration: 200
+
+
+window.messagesScrolledToBottom = ->
+  scrollContainer = $("#ConversationInner")
+  scrollTarget = $("#MessagesList")
+  scrollContainer.scrollTop() == (scrollTarget.height() - scrollContainer.height())
+
+window.autoScrollMessages = ->
+  scrollContainer = $("#ConversationInner")
+  scrollTarget = $("#MessagesList")
+  scrollContainer.scrollTop scrollTarget.height() - scrollContainer.height()
 
 
 window.scrollSnap = ->
@@ -185,6 +197,7 @@ window.reformat = ->
   windowWidth = $(window).width()
   $(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width())
   window.scrollSnapThreshold = windowWidth / 2
+  autoScrollMessages()
   true
 
 
@@ -202,7 +215,8 @@ $ ->
   window.reformat()
 
   window.client = new JSONRPCClient
-    url: "ws://192.168.7.100:8000/",
+    #url: "ws://192.168.7.100:8000/",
+    url: "ws://shoebox.jbotelho.com:42450/",
     ready: =>
       console.log "Ready callback"
       client.getSession (result) =>
@@ -214,10 +228,10 @@ $ ->
         window.reformat()
 
     notification: (data) =>
-      #shouldScroll = $(document).scrollTop() == ($(document).height() - $(window).height())
       console.log "Notification: " + data
+      shouldScroll = messagesScrolledToBottom()
       Util.applyDelta session, data.delta
-      #$(document).scrollTop $(document).height() - $(window).height() if shouldScroll
+      autoScrollMessages() if shouldScroll
       #newViewModel = ko.mapping.fromJS({messages: data});
       #for message in newViewModel.messages()
       #  viewModel.messages.push message

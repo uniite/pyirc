@@ -16,6 +16,7 @@
             return node ? ko.utils.arrayPushAll([], node.cloneNode(true).childNodes) : ko.utils.parseHtmlFragment(templateSource['text']());
         };
     </script>
+    <script src="jquery.base64.min.js" type="text/javascript"></script>
     <script src="websocket.js" type="text/javascript"></script>
     <script src="app.js" type="text/javascript"></script>
     <link href="css/bootstrap.min.css" type="text/css" rel="stylesheet" />
@@ -47,10 +48,12 @@
                         <div class="inner" data-bind="text: name"></div>
                     </div>
                     <div id="ConversationInner" class="middle">
-                        <div id="MessagesList" data-bind="foreach: messages">
-                            <div class="message">
-                                <strong><span data-bind="text: sender"></span>: </strong>
-                                <span data-bind="text: body"></span>
+                        <div id="MessagesList">
+                            <div id="MessagesListInner" data-bind="foreach: messages">
+                                <div class="message">
+                                    <strong><span data-bind="text: sender"></span>: </strong>
+                                    <span data-bind="text: body"></span>
+                                </div>
                             </div>
                         </div>
                     </div>

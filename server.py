@@ -130,7 +130,7 @@ class Session(SimpleObservable, JSONSerializable):
     def send_message(self, conversation_id, message):
         conv = self.conversations[conversation_id]
         conv.send_message(Message(None, "me", message, conv))
-
+    # TODO: Support IRC ['ACTION', 'looks around']
     def start(self):
         irc = IRCConnection(self, [("irc.freenode.org", 6667)], "python_phone", "python_phone")
         self.connections["irc"] = irc
