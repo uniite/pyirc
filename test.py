@@ -28,7 +28,7 @@ class TestSimpleObservable(unittest.TestCase):
         # Subscribe to its alert event
         subscription = alerter.subscribe("alert", self.callback)
         # Make sure the subscription is there
-        self.assertEqual(alerter._subscribers["alert"], [subscription])
+        self.assertEqual([subscription], alerter._subscribers["alert"])
         # Trigger an event
         alerter.alert()
         # Make sure it called the callback
@@ -54,7 +54,7 @@ class TestSimpleObservable(unittest.TestCase):
         alerter = self.Alerter()
         # Subscribe to its alert event thrice
         for i in range(3):
-            subscription = alerter.subscribe("alert", self.multi_callback)
+            alerter.subscribe("alert", self.multi_callback)
         # Trigger an event
         alerter.alert()
         # Make sure it called the callback thrice

@@ -30,7 +30,7 @@ class SimpleObservable(object):
                 s.callback(target, data)
 
     def subscribe(self, event, callback, shared=False, prefix=None):
-        # If this is our first or only subscription,
+        # If this is our first or only subscriber,
         # look for children from which we can propagate events
         if not hasattr(self, "_subscriptions") or self._subscriptions == []:
             self._subscriptions = []
@@ -48,7 +48,7 @@ class SimpleObservable(object):
             self._subscribers[event].append(s)
         else:
             self._subscribers[event] = [s]
-        # Return teh subscription
+        # Return the subscription
         return s
 
     def unsubscribe(self, subscription):
