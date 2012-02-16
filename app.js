@@ -94,6 +94,7 @@
         last_target = target;
         if (typeof target === "function") target = target();
       }
+      console.log(last_key);
       if (delta.constant) {
         data = delta.data;
       } else {
@@ -126,6 +127,24 @@
       this.currentConversation = ko.computed(function() {
         return _this.conversations()[_this.currentConversationIndex()];
       });
+      this.currentMessages = ko.computed(function() {
+        var msgs;
+        msgs = _this.currentConversation().messages();
+        if (msgs.length > 100) {
+          return msgs.slice(msgs.length - 100, msgs.length);
+        } else {
+          return msgs;
+        }
+      });
+      this.currentUsers = ko.computed(function() {
+        var users;
+        users = _this.currentConversation().users();
+        if (users.length > 100) {
+          return users.slice(users.length - 100, users.length);
+        } else {
+          return users;
+        }
+      });
     }
 
     SessionModel.prototype.sendMessage = function() {
@@ -154,7 +173,7 @@
     return window.scrollSnap();
   });
 
-  $(document).bind("scroll", function() {
+  $(document).bind("scroll", function(e) {
     if (window.scrollDone === true) {
       window.scrollDone = false;
       return;
@@ -170,6 +189,8 @@
     return scrollToPane(currentPane() + 1);
   };
 
+  window.lastPane = 0;
+
   window.currentPane = function() {
     return $("body").scrollLeft() / $(window).width();
   };
@@ -180,9 +201,7 @@
     $("body").stop(true, true);
     return $("body").animate({
       scrollLeft: targetX
-    }, {
-      duration: 200
-    });
+    }, 200);
   };
 
   window.messagesScrolledToBottom = function() {
@@ -213,10 +232,38 @@
     } else {
       targetX = rightPaneX;
     }
+    if (scrollX === targetX) return;
     if (Math.abs(scrollX - targetX) < 10) {
       $("body").scrollLeft(targetX);
     } else {
       scrollToPane(targetX / windowWidth);
+    }
+    return window.reformat();
+  };
+
+  window.dragSnap = function() {
+    var closerToLeft, leftPaneX, rightPaneX, scrollX, targetX, windowWidth;
+    if (!window.scrollSnapEnabled) return;
+    console.warn("Snap!");
+    windowWidth = $(window).width();
+    scrollX = $("#PageContainer").position().left;
+    leftPaneX = Math.floor(scrollX / windowWidth) * windowWidth;
+    rightPaneX = leftPaneX + windowWidth;
+    closerToLeft = ((scrollX - leftPaneX) - (windowWidth / 2)) < 0;
+    if (closerToLeft) {
+      targetX = leftPaneX;
+    } else {
+      targetX = rightPaneX;
+    }
+    if (Math.abs(scrollX - targetX) < 10) {
+      $("#PageContainer").css("left", targetX);
+    } else {
+      $("#PageContainer").stop(true, true);
+      $("#PageContainer").animate({
+        left: targetX
+      }, {
+        duration: 200
+      });
     }
     return window.reformat();
   };
@@ -227,26 +274,17 @@
     $(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width());
     window.scrollSnapThreshold = windowWidth / 2;
     autoScrollMessages();
+    scrollSnap();
     return true;
   };
 
   $(function() {
-    var _this = this;
-    $(window).bind("touchdown", function(e) {
-      $("body").stop(true, false);
-      return true;
-    });
-    $(window).bind("touchstart", function(e) {
-      $("body").stop(true, false);
-      return true;
-    });
-    $(window).bind("touchmove", function(e) {
-      $("body").stop(true, false);
-      return true;
-    });
+    var w,
+      _this = this;
     window.reformat();
+    w = $(window).width();
     return window.client = new JSONRPCClient({
-      url: "ws://shoebox.jbotelho.com:42450/",
+      url: "ws://192.168.7.100:8000/",
       ready: function() {
         console.log("Ready callback");
         return client.getSession(function(result) {

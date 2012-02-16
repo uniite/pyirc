@@ -44,7 +44,6 @@
     };
     test("subscribe", function() {
       var alerter, k, subscription, v;
-      expect(8);
       alerter = new Alerter();
       subscription = alerter.subscribe("alert", callback);
       for (k in subscription) {
@@ -70,7 +69,7 @@
       }
       return _results;
     });
-    return test("subscribe all", function() {
+    test("subscribe all", function() {
       var alerter, subscription;
       alerter = new Alerter();
       subscription = alerter.subscribe("__all__", callback);
@@ -78,6 +77,74 @@
       deepEqual(callbackResult, [null, "alert", "Alert!"]);
       alerter.warn();
       return deepEqual(callbackResult, [null, "warn", "Warning!"]);
+    });
+    test("unsubscribe", function() {
+      var alerter, subscription;
+      alerter = new Alerter();
+      subscription = alerter.subscribe("alert", callback);
+      alerter.unsubscribe(subscription);
+      alerter.alert();
+      return equal(callbackResult, null);
+    });
+    test("subscription cancel", function() {
+      var alerter, subscription;
+      alerter = new Alerter();
+      subscription = alerter.subscribe("alert", callback);
+      subscription.cancel();
+      alerter.alert();
+      return equal(callbackResult, null);
+    });
+    test("propagation", function() {
+      var SuperAlerter, subscription, super_alerter;
+      SuperAlerter = (function(_super) {
+
+        __extends(SuperAlerter, _super);
+
+        function SuperAlerter(alerter, alerter2) {
+          this.alerter = alerter;
+          this.alerter2 = alerter2;
+        }
+
+        return SuperAlerter;
+
+      })(SimpleObservable);
+      super_alerter = new SuperAlerter(new Alerter(), new Alerter());
+      subscription = super_alerter.subscribe("__all__", callback);
+      super_alerter.alerter2.alert();
+      return deepEqual(callbackResult, [["alerter2", null], "alert", "Alert!"]);
+    });
+    return test("garbage collection", function() {
+      var ParanoidAlerter, paranoid_alerter, status, subscription;
+      status = {
+        "deleted": false
+      };
+      ParanoidAlerter = (function(_super) {
+
+        __extends(ParanoidAlerter, _super);
+
+        function ParanoidAlerter() {
+          ParanoidAlerter.__super__.constructor.apply(this, arguments);
+        }
+
+        ParanoidAlerter.prototype.__del__ = function() {
+          return this.status["deleted"] = true;
+        };
+
+        return ParanoidAlerter;
+
+      })(SimpleObservable);
+      paranoid_alerter = new ParanoidAlerter();
+      paranoid_alerter.status = status;
+      paranoid_alerter.child = new Alerter();
+      subscription = paranoid_alerter.subscribe("__all__", callback);
+      deepEqual(paranoid_alerter._subscribers["__all__"], [subscription]);
+      notDeepEqual(paranoid_alerter.child._subscribers["__all__"], []);
+      subscription.cancel();
+      delete subscription;
+      deepEqual(paranoid_alerter._subscribers, {});
+      deepEqual(paranoid_alerter._subscriptions, []);
+      deepEqual(paranoid_alerter.child._subscribers, {});
+      return delete paranoid_alerter;
     });
   });
 

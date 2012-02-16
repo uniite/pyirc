@@ -83,7 +83,7 @@ class TestSimpleObservable(unittest.TestCase):
         alerter.unsubscribe(subscription)
         # Trigger an event
         alerter.alert()
-        # Make sure it called the callback
+        # Make sure it didn't call the callback
         self.assertEqual(None, self.callback_result)
 
     def test_subscription_cancel(self):
@@ -104,7 +104,6 @@ class TestSimpleObservable(unittest.TestCase):
             def __init__(self, alerter, alerter2):
                 self.alerter = alerter
                 self.alerter2 = alerter2
-                SimpleObservable.__init__(self)
         super_alerter = SuperAlerter(self.Alerter(), self.Alerter())
         # Subscribe to everything
         subscription = super_alerter.subscribe("__all__", self.callback)

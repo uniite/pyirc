@@ -81,6 +81,7 @@ class Util
     # make the data observable.
     # TODO: See if it is worth it, resource-wise.
     # You could do cool things like dynamically change username aliases
+    console.log(last_key)
     if delta.constant
       data = delta.data
     else
@@ -103,6 +104,18 @@ class SessionModel
     @.outgoingMessage = ko.observable("")
     @.currentConversation = ko.computed =>
       @.conversations()[@.currentConversationIndex()]
+    @.currentMessages = ko.computed =>
+      msgs = @.currentConversation().messages()
+      if msgs.length > 100
+        msgs.slice(msgs.length - 100, msgs.length)
+      else
+        msgs
+    @.currentUsers = ko.computed =>
+      users = @.currentConversation().users()
+      if users.length > 100
+        users.slice(users.length - 100, users.length)
+      else
+        users
 
   sendMessage: =>
     index = @.conversations().indexOf @.currentConversation()
@@ -124,7 +137,7 @@ $(window).resize ->
  reformat()
  window.scrollSnap()
 
-$(document).bind "scroll", ->
+$(document).bind "scroll", (e) ->
   if window.scrollDone == true
     window.scrollDone = false
     return
@@ -137,7 +150,7 @@ window.scrollSnapEnabled = true
 window.scrollNext = ->
   scrollToPane(currentPane() + 1)
 
-
+window.lastPane = 0
 window.currentPane = ->
   return $("body").scrollLeft() / $(window).width()
 
@@ -146,8 +159,7 @@ window.scrollToPane = (pane) ->
   # First, cancel any animations currently running on the body
   # (most likely previous snap animations)
   $("body").stop(true, true)
-  $("body").animate scrollLeft: targetX,
-    duration: 200
+  $("body").animate scrollLeft: targetX, 200
 
 
 window.messagesScrolledToBottom = ->
@@ -179,6 +191,9 @@ window.scrollSnap = ->
   else
     targetX = rightPaneX
 
+  # Don't do anything if we're already there
+  return if scrollX == targetX
+
   # Do the actual snapping
   # If the distance we need to scroll is fairly small, don't bother animating.
   if Math.abs(scrollX - targetX) < 10
@@ -191,6 +206,37 @@ window.scrollSnap = ->
   window.reformat()
 
 
+window.dragSnap = ->
+  return unless window.scrollSnapEnabled
+  console.warn "Snap!"
+
+  # Figure the X coordinates of the nearest panes to the left and right
+  windowWidth = $(window).width()
+  scrollX = $("#PageContainer").position().left
+  leftPaneX = Math.floor(scrollX / windowWidth) * windowWidth
+  rightPaneX = leftPaneX + windowWidth
+  # Figure out pane we're closer to
+  closerToLeft = ((scrollX - leftPaneX) - (windowWidth / 2)) < 0
+
+  # Get the X coordinate of the pane we need to snap to
+  if closerToLeft
+    targetX = leftPaneX
+  else
+    targetX = rightPaneX
+
+  # Do the actual snapping
+  # If the distance we need to scroll is fairly small, don't bother animating.
+  if Math.abs(scrollX - targetX) < 10
+    $("#PageContainer").css("left", targetX)
+    # Otherwise, do a quick animation
+  else
+    $("#PageContainer").stop(true, true)
+    $("#PageContainer").animate left: targetX,
+      duration: 200
+
+  # Refresh the page formatting
+  window.reformat()
+
 
 
 window.reformat = ->
@@ -198,25 +244,19 @@ window.reformat = ->
   $(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width())
   window.scrollSnapThreshold = windowWidth / 2
   autoScrollMessages()
+  scrollSnap()
   true
 
 
 
 $ ->
-  $(window).bind "touchdown", (e) ->
-    $("body").stop true, false
-    return true
-  $(window).bind "touchstart", (e) ->
-    $("body").stop true, false
-    return true
-  $(window).bind "touchmove", (e) ->
-    $("body").stop true, false
-    return true
   window.reformat()
 
+  w = $(window).width()
+
   window.client = new JSONRPCClient
-    #url: "ws://192.168.7.100:8000/",
-    url: "ws://shoebox.jbotelho.com:42450/",
+    url: "ws://192.168.7.100:8000/",
+    #url: "ws://shoebox.jbotelho.com:42450/",
     ready: =>
       console.log "Ready callback"
       client.getSession (result) =>

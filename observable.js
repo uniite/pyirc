@@ -12,7 +12,7 @@
     }
 
     Subscription.prototype.cancel = function() {
-      return this.observable.unsubscribe(self);
+      return this.observable.unsubscribe(this);
     };
 
     return Subscription;
@@ -28,18 +28,19 @@
     };
 
     SimpleObservable.prototype._notify = function(target, event, data) {
-      var s, _base, _base2, _i, _len, _ref, _results;
+      var new_target, s, _base, _base2, _i, _len, _ref, _results;
       if (this._subscribers == null) return;
       (_base = this._subscribers)[event] || (_base[event] = []);
       (_base2 = this._subscribers)["__all__"] || (_base2["__all__"] = []);
-      _ref = $.merge(this._subscribers[event] || [], this._subscribers["__all__"] || []);
+      _ref = $.extend(this._subscribers[event] || [], this._subscribers["__all__"] || []);
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         s = _ref[_i];
         if (s.shared) {
           if (s.prefix != null) {
-            if (!target.push) target = [target];
-            _results.push(s.callback([s.prefix] + target, event, data));
+            if (!(target != null ? target.push : void 0)) target = [target];
+            new_target = $.merge([s.prefix], target);
+            _results.push(s.callback(new_target, event, data));
           } else {
             _results.push(s.callback(target, event, data));
           }
@@ -51,13 +52,17 @@
     };
 
     SimpleObservable.prototype.subscribe = function(event, callback, shared, prefix) {
-      var k, s, v, _base, _len;
-      if (!(self._subscriptions != null)) {
+      var k, ourCallback, s, v, _base,
+        _this = this;
+      if (!(this._subscriptions != null)) {
         this._subscriptions = [];
-        for (v = 0, _len = this.length; v < _len; v++) {
-          k = this[v];
+        for (k in this) {
+          v = this[k];
           if (typeof v.isObservable === "function" ? v.isObservable() : void 0) {
-            this._subscriptions.push(v.subscribe("__all__", this._notify, true, k));
+            ourCallback = function(t, e, d) {
+              return _this._notify(t, e, d);
+            };
+            this._subscriptions.push(v.subscribe("__all__", ourCallback, true, k));
           }
         }
       }
@@ -69,13 +74,14 @@
     };
 
     SimpleObservable.prototype.unsubscribe = function(subscription) {
-      var s, _i, _len, _ref;
-      this._subscribers[subscription.event].remove(subscription);
-      if (this._subscribers[subscription.event] === []) {
-        delete self._subscribers[subscription.event];
+      var s, subscribers, _i, _len, _ref;
+      subscribers = this._subscribers[subscription.event];
+      subscribers.splice(subscribers.indexOf(subscription), 1);
+      if (this._subscribers[subscription.event].length === 0) {
+        delete this._subscribers[subscription.event];
       }
-      if (self._subscribers === {}) {
-        _ref = self._subscriptions;
+      if ($.isEmptyObject(this._subscribers)) {
+        _ref = this._subscriptions;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           s = _ref[_i];
           s.cancel();

@@ -1,1 +1,1 @@
-coffee -c -w app.coffee
+coffee -c -w app.coffee observable.coffee observable_tests.coffee

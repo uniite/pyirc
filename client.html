@@ -2,9 +2,8 @@
 <head>
     <script src="jquery-1.7.1.min.js" type="text/javascript"></script>
     <script src="jquery-ui-1.8.17.custom.min.js" type="text/javascript"></script>
-    <script src="knockout-2.1.0pre.js" type="text/javascript"></script>
+    <script src="knockout-latest.debug.js" type="text/javascript"></script>
     <script src="knockout.mapping-2.0.1.js" type="text/javascript"></script>
-    <script src="jquery.mobile.carousel.js" type="text/javascript"></script>
     <script src="jquery.ui.touch-punch.min.js" type="text/javascript"></script>
     <script src="jquery.getscrollbarwidth.js" type="text/javascript"></script>
     <script src="knockout-repeat.js" type="text/javascript"></script>
@@ -26,7 +25,7 @@
 <body>
 <div id="PageContainer">
     <ul id="Carousel">
-        <div id="ConversationsListContainer" class="section">
+        <div id="ConversationsListContainer" class="pane">
             <div id="ConversationsList">
                 <div class="header">
                     <div class="inner">Conversations</div>
@@ -41,7 +40,7 @@
                 </div>
             </div>
         </div>
-        <div id="ConversationContainer" class="section">
+        <div id="ConversationContainer" class="pane">
             <div id="Conversation">
                 <!-- ko with: currentConversation -->
                     <div class="header">
@@ -49,7 +48,7 @@
                     </div>
                     <div id="ConversationInner" class="middle">
                         <div id="MessagesList">
-                            <div id="MessagesListInner" data-bind="foreach: messages">
+                            <div id="MessagesListInner" data-bind="foreach: $root.currentMessages">
                                 <div class="message">
                                     <strong><span data-bind="text: sender"></span>: </strong>
                                     <span data-bind="text: body"></span>
@@ -72,16 +71,24 @@
                 </div>
             </div>
         </div>
-        <div id="UsersListContainer" class="section">
+        <div id="UsersListContainer" class="pane">
             <div id="UsersList">
                 <div class="header">
                     <div class="inner">Users</div>
                 </div>
-                <div id="UsersListInner" class="scrollable"
-                     data-bind="with: currentConversation">
+                <div id="UsersListInner" class="scrollable">
                     <div class="user"
-                         data-bind="repeat: {foreach: users, bind: 'text: $item()'}">
+                         data-bind="repeat: {foreach: currentUsers, bind: 'text: $item()'}">
                     </div>
+                </div>
+            </div>
+        </div>
+        <div id="ContactsListContainer" class="pane">
+            <div id="ContactsList">
+                <div class="header">
+                    <div class="inner">Contacts</div>
+                </div>
+                <div id="ContactsListInner" class="scrollable">
                 </div>
             </div>
         </div>
