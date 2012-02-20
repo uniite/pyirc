@@ -208,7 +208,7 @@ class TestObservableList(unittest.TestCase):
         self.assertEqual(((0, "children", 1), "add", "hello!"), self.callback_result)
 
     def test_str(self):
-        self.assertEqual("[1, 2, 3]", "%s" % ObservableList(1, 2, 3))
+        self.assertEqual(str([1, 2, 3]), "%s" % ObservableList(1, 2, 3))
 
     def test_to_dict(self):
         self.assertEqual([1, 2, 3], ObservableList(1, 2, 3).to_dict())
