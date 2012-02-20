@@ -129,7 +129,7 @@ class ObservableList(collections.MutableSequence, SimpleObservable):
             self._subscriptions = []
         # If this is our first or only subscription,
         # look for list items from which we can propagate events
-        if not hasattr(self, "_subscriptions") or self._subscriptions == []:
+        if not self._subscriptions:
             for i in range(len(self.list)):
                 item = self.list[i]
                 if issubclass(item.__class__, SimpleObservable):

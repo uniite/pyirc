@@ -126,3 +126,55 @@ $ ->
     delete paranoid_alerter
     # Doesn't apply to JS
     #ok status["deleted"]
+
+
+
+  test "list add", ->
+    # Create an observable list
+    observable_list = new ObservableList()
+    # Subscribe to add events
+    subscription = observable_list.subscribe("add", callback)
+    # Add an item to it
+    observable_list.push("nom")
+    # Ensure this triggered the callback
+    deepEqual callbackResult, [0, "nom"]
+
+  test "list remove", ->
+    # Create an observable dict
+    observable_list = new ObservableList("one", "of", "these", "things")
+    # Subscribe to remove events
+    subscription = observable_list.subscribe("remove", callback)
+    # Remove an item from it
+    observable_list.remove("these")
+    # Ensure this triggered the callback
+    deepEqual callbackResult, [2, "these"]
+
+  test "list propagation", ->
+    # Create an observable list that contains other observables
+    observable_list = new ObservableList(new Alerter(), new Alerter())
+    # Subscribe to all events
+    subscription = observable_list.subscribe("__all__", callback)
+    # Trigger an alert on something in the list
+    observable_list.list[1].alert()
+    # Ensure this triggered the callback
+    deepEqual callbackResult, [[1, null], "alert", "Alert!"]
+
+  test "list double propagation", ->
+    class MiddleMan extends SimpleObservable
+      constructor: ->
+        @children = new ObservableList()
+    # Create an observable list in an observable in an onbservable list
+    middle_man = new MiddleMan()
+    parent = new ObservableList()
+    # Subscribe to the to-level list
+    parent.subscribe("__all__", callback)
+    # Add something to it
+    parent.push(middle_man)
+    # Ensure this tells us the item was added at index 0 of the top-level
+    deepEqual callbackResult, [0, "add", middle_man]
+    callbackResult = null
+    # Add a few things to the inner list
+    middle_man.children.push("hi!")
+    middle_man.children.push("hello!")
+    # Ensure we get told the string was added at parent[0].children[0]
+    deepEqual callbackResult,  [[0, "children", 1], "add", "hello!"]

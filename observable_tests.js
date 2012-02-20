@@ -113,7 +113,7 @@
       super_alerter.alerter2.alert();
       return deepEqual(callbackResult, [["alerter2", null], "alert", "Alert!"]);
     });
-    return test("garbage collection", function() {
+    test("garbage collection", function() {
       var ParanoidAlerter, paranoid_alerter, status, subscription;
       status = {
         "deleted": false
@@ -145,6 +145,50 @@
       deepEqual(paranoid_alerter._subscriptions, []);
       deepEqual(paranoid_alerter.child._subscribers, {});
       return delete paranoid_alerter;
+    });
+    test("list add", function() {
+      var observable_list, subscription;
+      observable_list = new ObservableList();
+      subscription = observable_list.subscribe("add", callback);
+      observable_list.push("nom");
+      return deepEqual(callbackResult, [0, "nom"]);
+    });
+    test("list remove", function() {
+      var observable_list, subscription;
+      observable_list = new ObservableList("one", "of", "these", "things");
+      subscription = observable_list.subscribe("remove", callback);
+      observable_list.remove("these");
+      return deepEqual(callbackResult, [2, "these"]);
+    });
+    test("list propagation", function() {
+      var observable_list, subscription;
+      observable_list = new ObservableList(new Alerter(), new Alerter());
+      subscription = observable_list.subscribe("__all__", callback);
+      observable_list.list[1].alert();
+      return deepEqual(callbackResult, [[1, null], "alert", "Alert!"]);
+    });
+    return test("list double propagation", function() {
+      var MiddleMan, middle_man, parent;
+      MiddleMan = (function(_super) {
+
+        __extends(MiddleMan, _super);
+
+        function MiddleMan() {
+          this.children = new ObservableList();
+        }
+
+        return MiddleMan;
+
+      })(SimpleObservable);
+      middle_man = new MiddleMan();
+      parent = new ObservableList();
+      parent.subscribe("__all__", callback);
+      parent.push(middle_man);
+      deepEqual(callbackResult, [0, "add", middle_man]);
+      callbackResult = null;
+      middle_man.children.push("hi!");
+      middle_man.children.push("hello!");
+      return deepEqual(callbackResult, [[0, "children", 1], "add", "hello!"]);
     });
   });
 

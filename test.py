@@ -202,8 +202,8 @@ class TestObservableList(unittest.TestCase):
         # Ensure this tells us the item was added at index 0 of the top-level
         self.assertEqual((0, "add", middle_man), self.callback_result)
         # Add a few things to the inner list
-        parent[0].children.append("hi!")
-        parent[0].children.append("hello!")
+        middle_man.children.append("hi!")
+        middle_man.children.append("hello!")
         # Ensure we get told the string was added at parent[0].children[0]
         self.assertEqual(((0, "children", 1), "add", "hello!"), self.callback_result)
 
