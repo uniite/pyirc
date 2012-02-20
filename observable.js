@@ -61,7 +61,7 @@
         this._subscriptions = [];
         for (k in this) {
           v = this[k];
-          if (typeof v.isObservable === "function" ? v.isObservable() : void 0) {
+          if (v != null ? typeof v.isObservable === "function" ? v.isObservable() : void 0 : void 0) {
             ourCallback = function(t, e, d) {
               return _this._notify(t, e, d);
             };
@@ -98,7 +98,7 @@
         _this = this;
       event || (event = "__all__");
       this._subscriptions || (this._subscriptions = []);
-      if (typeof observable.isObservable === "function" ? observable.isObservable() : void 0) {
+      if (observable != null ? typeof observable.isObservable === "function" ? observable.isObservable() : void 0 : void 0) {
         ourCallback = function(t, e, d) {
           return _this._notify(t, e, d);
         };
@@ -108,7 +108,7 @@
 
     SimpleObservable.prototype.removeSubscriptions = function(observable, cancel) {
       var s, subscription, _i, _len, _ref, _results;
-      if (typeof observable.isObservable === "function" ? observable.isObservable() : void 0) {
+      if (observable != null ? typeof observable.isObservable === "function" ? observable.isObservable() : void 0 : void 0) {
         _ref = [
           (function() {
             var _j, _len, _ref, _results2;
@@ -142,39 +142,40 @@
     function ObservableList() {
       this.subscribe = __bind(this.subscribe, this);
       this.push = __bind(this.push, this);
-      this.insert = __bind(this.insert, this);
-      var v, _i, _len;
+      this._insert = __bind(this._insert, this);
+      var v, _i, _len,
+        _this = this;
       this.list = [];
+      this.__defineGetter__("length", function() {
+        return _this.list.length;
+      });
       for (_i = 0, _len = arguments.length; _i < _len; _i++) {
         v = arguments[_i];
-        this.list.push(v);
+        this._insert(this.length, v);
       }
     }
-
-    ObservableList.prototype.length = function() {
-      return this.list.length;
-    };
 
     ObservableList.prototype.__getitem__ = function(i) {
       return this.list[i];
     };
 
+    ObservableList.prototype._remove = function(i) {
+      var v;
+      v = this.list[i];
+      this._notify(i, "remove", v);
+      this.removeSubscriptions(v);
+      this.list.splice(i, 1);
+      delete this[this.length];
+      return v;
+    };
+
     ObservableList.prototype.remove = function(item_to_remove) {
-      var i, v, _len, _ref, _results;
+      var i, v, _len, _ref;
       _ref = this.list;
-      _results = [];
       for (i = 0, _len = _ref.length; i < _len; i++) {
         v = _ref[i];
-        if (v === item_to_remove) {
-          this._notify(i, "remove", v);
-          this.removeSubscriptions(v);
-          this.list.slice(i, i + 1);
-          break;
-        } else {
-          _results.push(void 0);
-        }
+        if (v === item_to_remove) return this._remove(i);
       }
-      return _results;
     };
 
     ObservableList.prototype._setitem__ = function(i, v) {
@@ -184,14 +185,39 @@
       return this.list[i] = v;
     };
 
-    ObservableList.prototype.insert = function(i, v) {
+    ObservableList.prototype._insert = function(i, v) {
+      var _this = this;
       this._notify(i, "add", v);
       this.addSubscription(v, void 0, i);
-      return this.list.splice(i, 1, v);
+      this.list.splice(i, 0, v);
+      this.__defineGetter__(i, function() {
+        return _this.list[i];
+      });
+      this.__defineSetter__(i, function(value) {
+        return _this.list[i] = value;
+      });
+      return v;
     };
 
     ObservableList.prototype.push = function(v) {
-      return this.insert(this.list.length, v);
+      return this._insert(this.list.length, v);
+    };
+
+    ObservableList.prototype.splice = function(i, n) {
+      var j, x, _ref, _results;
+      if (n > 0) {
+        _results = [];
+        for (x = 0; 0 <= n ? x < n : x > n; 0 <= n ? x++ : x--) {
+          _results.push(this._remove(i));
+        }
+        return _results;
+      } else {
+        for (j = 2, _ref = arguments.length; 2 <= _ref ? j < _ref : j > _ref; 2 <= _ref ? j++ : j--) {
+          console.log(this.list.join(", "));
+          this._insert(i + j - 2, arguments[j]);
+        }
+        return console.log(this.list.join(", "));
+      }
     };
 
     ObservableList.prototype.toString = function() {
@@ -207,7 +233,7 @@
         _this = this;
       this._subscriptions || (this._subscriptions = []);
       if (this._subscriptions.length === 0) {
-        for (i = 0, _ref = this.list.length; 0 <= _ref ? i <= _ref : i >= _ref; 0 <= _ref ? i++ : i--) {
+        for (i = 0, _ref = this.list.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
           item = this.list[i];
           if (item != null ? typeof item.isObservable === "function" ? item.isObservable() : void 0 : void 0) {
             ourCallback = function(t, e, d) {

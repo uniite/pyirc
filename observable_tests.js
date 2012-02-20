@@ -58,7 +58,7 @@
     test("susbcribe multiple", function() {
       var alerter, i, _results;
       alerter = new Alerter();
-      for (i = 1; i <= 3; i++) {
+      for (i = 0; i <= 2; i++) {
         alerter.subscribe("alert", multiCallback);
       }
       alerter.alert();
@@ -145,6 +145,32 @@
       deepEqual(paranoid_alerter._subscriptions, []);
       deepEqual(paranoid_alerter.child._subscribers, {});
       return delete paranoid_alerter;
+    });
+    test("list array emulation", function() {
+      var i, observableList;
+      observableList = new ObservableList("hello", "on", "this", "fine", "day");
+      deepEqual(observableList.list, ["hello", "on", "this", "fine", "day"]);
+      equal(observableList.length, 5);
+      for (i = 0; i <= 5; i++) {
+        equal(observableList[i], observableList.list[i]);
+      }
+      equal(observableList.remove("on"), "on");
+      equal(observableList.length, 4);
+      for (i = 0; i <= 4; i++) {
+        equal(observableList[i], observableList.list[i]);
+      }
+      equal(observableList.push("..."), "...");
+      equal(observableList.push("hello"), "hello");
+      equal(observableList.push("there"), "there");
+      deepEqual(observableList.list, ["hello", "this", "fine", "day", "...", "hello", "there"]);
+      equal(observableList.length, 7);
+      for (i = 0; i <= 6; i++) {
+        equal(observableList[i], observableList.list[i]);
+      }
+      observableList.splice(2, 4);
+      deepEqual(observableList.list, ["hello", "this", "there"]);
+      observableList.splice(2, 0, "aa", "ab", "bc");
+      return deepEqual(observableList.list, ["hello", "this", "aa", "ab", "bc", "there"]);
     });
     test("list add", function() {
       var observable_list, subscription;

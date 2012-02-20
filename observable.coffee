@@ -32,7 +32,7 @@ class SimpleObservable
       @_subscriptions = []
       for k,v of @
         # If the given attribute is an observable "child", subscribe to it
-        if v.isObservable?()
+        if v?.isObservable?()
           # Make sure it is prefixed with the attribute name
           ourCallback = (t, e, d) => @_notify(t, e, d)
           @_subscriptions.push(v.subscribe("__all__", ourCallback, true, k))
@@ -62,12 +62,12 @@ class SimpleObservable
   addSubscription: (observable, event, prefix) ->
     event or= "__all__"
     @_subscriptions or= []
-    if observable.isObservable?()
+    if observable?.isObservable?()
       ourCallback = (t, e, d) => @_notify(t, e, d)
       @_subscriptions.push(observable.subscribe(event, ourCallback, undefined, prefix))
 
   removeSubscriptions: (observable, cancel) ->
-    if observable.isObservable?()
+    if observable?.isObservable?()
       for subscription in [s for s in @_subscriptions when s.observable == observable]
         if cancel
           subscription.cancel()
@@ -78,23 +78,33 @@ class SimpleObservable
 class ObservableList extends SimpleObservable
   constructor: ->
     @list = []
-    for v in arguments
-      @list.push v
+    @__defineGetter__ "length", => @list.length
 
-  length: -> @list.length
+    for v in arguments
+      @_insert @length, v
 
   __getitem__: (i) -> @list[i]
+
+
+  _remove: (i) ->
+    v = @list[i]
+    # Notify our subscribers of the removal
+    @_notify i, "remove", v
+    # Unsubscribe from the item if it is observable
+    @removeSubscriptions v
+    # Go ahead with the normal removal operation
+    @list.splice i, 1
+    # Delete the last getter/setter, in terms of numeric order,
+    # since it will no longer be needed
+    delete @[@length]
+    # Return the removed item
+    v
+
 
   remove: (item_to_remove) ->
     for v, i in @list
       if v == item_to_remove
-        # Notify our subscribers of the removal
-        @_notify(i, "remove", v)
-        # Unsubscribe from the item if it is observable
-        @removeSubscriptions(v)
-        # Go ahead with the normal removal operation
-        @list.slice(i, i + 1)
-        break
+        return @_remove i
 
   _setitem__: (i, v) ->
     # Notify our subscribers of the change
@@ -106,15 +116,35 @@ class ObservableList extends SimpleObservable
     # Go ahead with the normal setitem operation
     @list[i] = v
 
-  insert: (i, v) =>
+  _insert: (i, v) =>
     # Notify our subscribers of the addition
     @_notify(i, "add", v)
     # Subscribe to the new item if it is observable
     @addSubscription(v, undefined, i)
     # Go ahead with the normal insert operation
-    @list.splice(i, 1, v)
+    @list.splice(i, 0, v)
+    # Define a getter and setter for this item, to emulate an array
+    @__defineGetter__ i, => @list[i]
+    @__defineSetter__ i, (value) => @list[i] = value
+    # Return the added value
+    v
 
-  push: (v) => @insert(@list.length, v)
+  push: (v) => @_insert(@list.length, v)
+
+  splice: (i, n) ->
+    # TODO: support negative values for i
+    # A remove operation
+    if n > 0
+      # Remove n items starting at the specified index
+      for x in [0...n]
+        @_remove i
+    # An add operation
+    else
+      # Insert the given items at the specified index
+      for j in [2...arguments.length]
+        console.log @list.join(", ")
+        @_insert i + j - 2, arguments[j]
+      console.log @list.join(", ")
 
   toString: ->
     @list.toString()
@@ -127,8 +157,8 @@ class ObservableList extends SimpleObservable
     @_subscriptions or= []
     # If this is our first or only subscription,
     # look for list items from which we can propagate events
-    if @_subscriptions.length == 0
-      for i in [0..@list.length]
+    if @_subscriptions.length is 0
+      for i in [0...@list.length]
         item = @list[i]
         if item?.isObservable?()
           # Make sure it is prefixed with the list index

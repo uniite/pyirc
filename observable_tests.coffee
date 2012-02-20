@@ -41,7 +41,7 @@ $ ->
     # Create an observable
     alerter = new Alerter()
     # Subscribe to its alert event thrice
-    for i in [1..3]
+    for i in [0..2]
       alerter.subscribe("alert", multiCallback)
     # Trigger an event
     alerter.alert()
@@ -127,6 +127,35 @@ $ ->
     # Doesn't apply to JS
     #ok status["deleted"]
 
+  # This is needed because emulating an array/list isn't straightforward in JavaScript
+  test "list array emulation", ->
+    # Create an observable list with a few items in it
+    observableList = new ObservableList("hello", "on", "this", "fine", "day")
+    # Check the internal array
+    deepEqual observableList.list, ["hello", "on", "this", "fine", "day"]
+    # Check the length getter
+    equal observableList.length, 5
+    # Check the item getters
+    for i in [0..5]
+      equal observableList[i], observableList.list[i]
+    # Remove an item and check again
+    equal observableList.remove("on"), "on"
+    equal observableList.length, 4
+    for i in [0..4]
+      equal observableList[i], observableList.list[i]
+    # Add a few items and check once more
+    equal observableList.push("..."), "..."
+    equal observableList.push("hello"), "hello"
+    equal observableList.push("there"), "there"
+    deepEqual observableList.list, ["hello", "this", "fine", "day", "...", "hello", "there"]
+    equal observableList.length, 7
+    for i in [0..6]
+      equal observableList[i], observableList.list[i]
+    # Splice some things
+    observableList.splice 2, 4
+    deepEqual observableList.list, ["hello", "this", "there"]
+    observableList.splice 2, 0, "aa", "ab", "bc"
+    deepEqual observableList.list, ["hello", "this", "aa", "ab", "bc", "there"]
 
 
   test "list add", ->
