@@ -186,6 +186,13 @@
       observable_list.remove("these");
       return deepEqual(callbackResult, [2, "these"]);
     });
+    test("list change", function() {
+      var observable_list, subscription;
+      observable_list = new ObservableList("something", "might", "change");
+      subscription = observable_list.subscribe("change", callback);
+      observable_list[1] = "will";
+      return deepEqual(callbackResult, [1, "will"]);
+    });
     test("list propagation", function() {
       var observable_list, subscription;
       observable_list = new ObservableList(new Alerter(), new Alerter());
@@ -193,7 +200,7 @@
       observable_list.list[1].alert();
       return deepEqual(callbackResult, [[1, null], "alert", "Alert!"]);
     });
-    return test("list double propagation", function() {
+    test("list double propagation", function() {
       var MiddleMan, middle_man, parent;
       MiddleMan = (function(_super) {
 
@@ -215,6 +222,12 @@
       middle_man.children.push("hi!");
       middle_man.children.push("hello!");
       return deepEqual(callbackResult, [[0, "children", 1], "add", "hello!"]);
+    });
+    test("list toString", function() {
+      return deepEqual((new ObservableList(1, 2, 3)).toString(), [1, 2, 3].toString());
+    });
+    return test("list toDict", function() {
+      return deepEqual(new ObservableList(1, 2, 3).toDict(), [1, 2, 3]);
     });
   });
 

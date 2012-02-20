@@ -178,6 +178,16 @@ $ ->
     # Ensure this triggered the callback
     deepEqual callbackResult, [2, "these"]
 
+  test "list change", ->
+    # Create an observable dict
+    observable_list = new ObservableList("something", "might", "change")
+    # Subscribe to change events
+    subscription = observable_list.subscribe("change", callback)
+    # Change an item in it
+    observable_list[1] = "will"
+    # Ensure this triggered the callback
+    deepEqual callbackResult, [1, "will"]
+
   test "list propagation", ->
     # Create an observable list that contains other observables
     observable_list = new ObservableList(new Alerter(), new Alerter())
@@ -207,3 +217,9 @@ $ ->
     middle_man.children.push("hello!")
     # Ensure we get told the string was added at parent[0].children[0]
     deepEqual callbackResult,  [[0, "children", 1], "add", "hello!"]
+
+  test "list toString", ->
+    deepEqual (new ObservableList(1, 2, 3)).toString(), [1, 2, 3].toString()
+
+  test "list toDict", ->
+    deepEqual new ObservableList(1, 2, 3).toDict(), [1, 2, 3]

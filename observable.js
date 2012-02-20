@@ -194,7 +194,7 @@
         return _this.list[i];
       });
       this.__defineSetter__(i, function(value) {
-        return _this.list[i] = value;
+        return _this._setitem__(i, value);
       });
       return v;
     };

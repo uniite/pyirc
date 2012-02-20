@@ -125,7 +125,7 @@ class ObservableList extends SimpleObservable
     @list.splice(i, 0, v)
     # Define a getter and setter for this item, to emulate an array
     @__defineGetter__ i, => @list[i]
-    @__defineSetter__ i, (value) => @list[i] = value
+    @__defineSetter__ i, (value) => @_setitem__ i, value
     # Return the added value
     v
 
