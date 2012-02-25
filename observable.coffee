@@ -146,6 +146,9 @@ class ObservableList extends SimpleObservable
         @_insert i + j - 2, arguments[j]
       console.log @list.join(", ")
 
+  forEach: (callback, thisArg) ->
+    @list.forEach callback, thisArg
+
   toString: ->
     @list.toString()
 
