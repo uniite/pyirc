@@ -2,27 +2,14 @@
 <head>
     <script src="jquery-1.7.1.min.js" type="text/javascript"></script>
     <script src="handlebars.min.js" type="text/javascript"></script>
-    <script src="observable.min.js" type="text/javascript"></script>
+    <script src="kapow.min.js" type="text/javascript"></script>
     <script type="text/javascript">
-        var myList = new ObservableList();
-        var myListItemTemplate;
+        var myList = new ObservableList(["First", "Second", "Third"]);
         $(function() {
-            var source   = $("#listItemTemplate").html();
-            myListItemTemplate = Handlebars.compile(source);
-            myList.subscribe("add", function(target, data) {
-                var newItem = myListItemTemplate({id: target, content: data});
-                $("#MyList").append($(newItem));
+            $("#MyList").bindToObservable({
+                observable: myList,
+                template: Handlebars.compile($("#listItemTemplate").html())
             });
-            myList.subscribe("remove", function(target, data) {
-                $("#MyList .item" + target).remove();
-            });
-            myList.subscribe("change", function(target, data) {
-                $("#MyList .item" + target).text(data);
-            });
-
-            myList.push("First");
-            myList.push("Second");
-            myList.push("Third");
         });
     </script>
 </head>
@@ -37,7 +24,7 @@
     >>> myList.list
     </pre>
     <script id="listItemTemplate" type="text/x-handlebars">
-        <li class="item{{id}}">{{content}}</li>
+        <li>Index {{id}}: {{data}}</li>
     </script>
     This list is bound to <i>myList</i>
     <ul id="MyList">
