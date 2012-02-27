@@ -80,7 +80,11 @@ class ObservableList extends SimpleObservable
     @list = []
     @__defineGetter__ "length", => @list.length
 
-    for v in arguments
+    if arguments.length == 1 and arguments[0].length?
+      items = arguments[0]
+    else
+      items = arguments
+    for v in items
       @_insert @length, v
 
   __getitem__: (i) -> @list[i]

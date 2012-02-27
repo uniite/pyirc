@@ -113,7 +113,7 @@ class IRCConnection(irclib.SimpleIRCClient):
 
     def on_welcome(self, c, e):
         """ Called when the connection is ready. """
-        for channel in ["#pyguybot_test", "#/r/nyc"]:
+        for channel in ["#pyguybot_test", "#ubuntu"]:
             c.join(channel)
 
 

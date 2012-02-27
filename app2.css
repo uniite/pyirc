@@ -1,0 +1,164 @@
+body {
+    background: black;
+    color: white;
+
+    font-size: 1em;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+    height: 100%;
+    width: 100%;
+
+    margin: 0;
+    padding: 0;
+
+    overflow-x: scroll;
+    overflow-y: scroll;
+}
+
+/* way the hell off screen */
+.scrollbar-measure {
+    width: 100px;
+    height: 100px;
+    overflow: scroll;
+    position: absolute;
+    top: -9999px;
+}
+
+#PageContainer {
+    width: 100%;
+}
+
+
+
+h2 {
+    margin: 0;
+    padding: 0;
+}
+
+.header {
+    background: #7d7e7d; /* Old browsers */
+    background: -moz-linear-gradient(top,  #7d7e7d 0%, #0e0e0e 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#7d7e7d), color-stop(100%,#0e0e0e)); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(top,  #7d7e7d 0%,#0e0e0e 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(top,  #7d7e7d 0%,#0e0e0e 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(top,  #7d7e7d 0%,#0e0e0e 100%); /* IE10+ */
+    background: linear-gradient(top,  #7d7e7d 0%,#0e0e0e 100%); /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#7d7e7d', endColorstr='#0e0e0e',GradientType=0 ); /* IE6-9 */
+
+    color: white;
+    height: 3em;
+    text-align: center;
+
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1;
+}
+
+.header .inner {
+    font-size: 1.2em;
+
+    padding: 0.6em;
+    padding-top: 0.8em;
+}
+
+#Carousel {
+    width: 100%;
+}
+
+.pane {
+    float: left;
+    height: 100%;
+    width: 100%;
+    user-select: none;
+}
+
+#ConversationsListContainer {
+
+}
+
+#ConversationContainer {
+
+}
+
+
+#ConversationsListInner {
+    padding: 1em;
+}
+#MessagesListInner {
+    padding: 0.5em;
+}
+
+.conversation,
+.user {
+    padding: 1em;
+    color: white;
+    border-bottom: solid #406f8a 1px;
+}
+
+.conversation:hover {
+    background: #073f52;
+}
+
+.conversation .name,
+.user .name {
+    font-size: 1em;
+    font-weight: normal;
+}
+
+.selected,
+.selected2 {
+    background: #167799;
+}
+
+
+.middle,
+.scrollable {
+    position: absolute;
+    width: 100%;
+}
+
+.middle {
+    margin-top: 3em;
+    bottom: 2.7em;
+}
+
+.scrollable {
+    top: 3em;
+    top: 3em;
+    bottom: 0;
+}
+
+.footer {
+    height: 2.7em;
+    width: 100%;
+
+    position: absolute;
+    bottom: 0;
+}
+
+.footer .inner-left,
+.footer .inner-right {
+    float: left;
+}
+
+.footer input,
+.footer button {
+    height: 2em;
+    font-size: 1em !important;
+}
+
+#ConversationFooter input {
+    width: 100%;
+}
+
+
+ul,
+li{
+    margin: 0;
+    padding: 0;
+}
+
+li {
+    list-style-type: none;
+}

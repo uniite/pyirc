@@ -143,14 +143,19 @@
       this.subscribe = __bind(this.subscribe, this);
       this.push = __bind(this.push, this);
       this._insert = __bind(this._insert, this);
-      var v, _i, _len,
+      var items, v, _i, _len,
         _this = this;
       this.list = [];
       this.__defineGetter__("length", function() {
         return _this.list.length;
       });
-      for (_i = 0, _len = arguments.length; _i < _len; _i++) {
-        v = arguments[_i];
+      if (arguments.length === 1 && (arguments[0].length != null)) {
+        items = arguments[0];
+      } else {
+        items = arguments;
+      }
+      for (_i = 0, _len = items.length; _i < _len; _i++) {
+        v = items[_i];
         this._insert(this.length, v);
       }
     }
@@ -218,6 +223,10 @@
         }
         return console.log(this.list.join(", "));
       }
+    };
+
+    ObservableList.prototype.forEach = function(callback, thisArg) {
+      return this.list.forEach(callback, thisArg);
     };
 
     ObservableList.prototype.toString = function() {
