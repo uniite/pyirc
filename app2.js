@@ -2,6 +2,10 @@
   var JSONRPCClient, SessionModel, Util,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
+  if (!(window.WebSocket != null) && (window.MozWebSocket != null)) {
+    window.WebSocket = window.MozWebSocket;
+  }
+
   JSONRPCClient = (function() {
 
     function JSONRPCClient(options) {
@@ -21,7 +25,6 @@
       };
       this.ws.onmessage = function(e) {
         var response;
-        console.log("RESPONSE " + e.data);
         response = JSON.parse(e.data);
         if (response.notification) {
           if (_this.options && typeof _this.options.notification === "function") {
@@ -107,6 +110,7 @@
       _ref = this.conversations;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         c = _ref[_i];
+        c.messages = new ObservableList(c.messages);
         c.users = new ObservableList(c.users);
       }
       this.conversations = new ObservableList(this.conversations);
@@ -165,19 +169,28 @@
     return window.client = new JSONRPCClient({
       url: "ws://192.168.7.100:8000/",
       ready: function() {
+        var rpcStart;
         console.log("Ready callback");
+        rpcStart = (new Date).getTime();
         return client.getSession(function(result) {
-          var start;
+          var rpcEnd, start;
+          rpcEnd = (new Date).getTime() - rpcStart;
+          $("#JSONTime").text("Global: " + rpcEnd + "ms");
           console.log("Got Session");
           start = (new Date).getTime();
           window.session = new SessionModel(result);
+          $("#UsersListInner").hide();
           $("#UsersListInner").bindToObservable({
-            observable: session.conversations[1].users,
-            template: Handlebars.compile($("#UserListItem").html())
+            observable: session.conversations[1].messages,
+            template: Handlebars.compile($("#MessageItem").html())
           });
-          console.log("TOOK " + ((new Date).getTime() - start));
-          $(document).scrollLeft(0);
-          return window.reformat();
+          console.log("PROCESS " + ((new Date).getTime() - start));
+          return window.setTimeout(function() {
+            var end;
+            $("#UsersListInner").show();
+            end = (new Date).getTime() - start;
+            return $("#RenderTime").text("Render: " + end + "ms");
+          }, 0);
         });
       },
       notification: function(data) {

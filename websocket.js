@@ -47,9 +47,8 @@ PhoneGapWebsockets = (function() {
 	// static event methods to call event methods on target websocket objects
 	WebSocket.onmessage = function (evt) {
         if (evt.data.length == 0)
-            console.log("Decoding: " + evt.data)
-            evt.data = $.base64.decode(evt.data);
-        console.log("Decoded: " + evt.data)
+            return
+        evt.data = $.base64.decode(evt.data);
 		WebSocket.store[evt._target]['onmessage'].call(global, evt);
 	}	
 	

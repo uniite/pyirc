@@ -1,3 +1,6 @@
+if not window.WebSocket? and window.MozWebSocket?
+  window.WebSocket = window.MozWebSocket
+
 class JSONRPCClient
   constructor: (@options) ->
     console.log @options
@@ -16,7 +19,7 @@ class JSONRPCClient
 
     # When we get a WebSocket message...
     @ws.onmessage = (e) =>
-      console.log("RESPONSE " + e.data)
+      #console.log("RESPONSE " + e.data)
       # Parse the response
       response = JSON.parse(e.data)
 
@@ -86,6 +89,7 @@ class SessionModel
   constructor: (data) ->
     @conversations = data.conversations
     for c in @conversations
+      c.messages = new ObservableList(c.messages)
       c.users = new ObservableList(c.users)
     @conversations = new ObservableList(@conversations)
 
@@ -129,7 +133,6 @@ window.reformat = ->
 
 
 
-
 $ ->
   window.reformat()
 
@@ -138,17 +141,26 @@ $ ->
     #url: "ws://shoebox.jbotelho.com:42450/",
     ready: =>
       console.log "Ready callback"
+      rpcStart = (new Date).getTime()
       client.getSession (result) =>
+        rpcEnd = ((new Date).getTime() - rpcStart)
+        $("#JSONTime").text("Global: " + rpcEnd + "ms")
         console.log "Got Session"
         #console.log result
         start = (new Date).getTime()
         window.session = new SessionModel(result)
+        $("#UsersListInner").hide()
         $("#UsersListInner").bindToObservable
-          observable: session.conversations[1].users
-          template: Handlebars.compile($("#UserListItem").html())
-        console.log("TOOK " + ((new Date).getTime() - start))
-        $(document).scrollLeft 0
-        window.reformat()
+          observable: session.conversations[1].messages
+          template: Handlebars.compile($("#MessageItem").html())
+        console.log("PROCESS " + ((new Date).getTime() - start))
+        #$(document).scrollLeft 0
+        #window.reformat()
+        window.setTimeout () ->
+          $("#UsersListInner").show()
+          end = ((new Date).getTime() - start)
+          $("#RenderTime").text("Render: " + end + "ms")
+        , 0
 
     notification: (data) =>
       console.log "Notification: " + data

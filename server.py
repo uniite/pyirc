@@ -30,6 +30,13 @@ class JSONSerializable(object):
     def to_json(self):
         return JSONEncoder().encode(self.to_dict())
 
+    @classmethod
+    def from_dict(cls, d):
+        obj = cls()
+        for k,v in d.iteritems():
+            setattr(obj, k, v)
+        return obj
+
 
 class User(JSONSerializable):
     _json_attrs = ["name", "alias", "connection"]
@@ -102,7 +109,7 @@ class Session(SimpleObservable, JSONSerializable):
     def get_conversation(self, connection, name):
         return self.conversation_lookup.get(self.conversation_key(connection, name))
 
-    def new_conversation(self, name, connection):
+    def new_conversation(self, connection, name):
         conv = Conversation(name, connection, {})
         conv.index = len(self.conversations)
         self.conversations.append(conv)
@@ -110,11 +117,23 @@ class Session(SimpleObservable, JSONSerializable):
         self.last_key = self.conversation_key(connection, name)
         return conv
 
+    def leave_conversation(self, connection, name):
+        for i in range(len(self.conversations)):
+            c = self.conversations[i]
+            print c
+            if c.name == name and c.connection == connection:
+                print "DELETED"
+                del self.conversations[i]
+                break
+
     def user_joined_conversation(self, connection, username, chatroom):
         self.get_conversation(connection, chatroom).users.append(username)
 
     def user_left_conversation(self, connection, username, chatroom):
-        self.get_conversation(connection, chatroom).users.remove(username)
+        try:
+            self.get_conversation(connection, chatroom).users.remove(username)
+        except:
+            print "Failed to remove %s from %s" % (username, self.get_conversation(connection, chatroom))
 
 
     def recv_message(self, connection, username, message, chatroom=None):

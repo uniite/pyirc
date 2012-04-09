@@ -84,8 +84,8 @@ class IRCConnection(irclib.SimpleIRCClient):
         username, channel = self.parse_event(e)
         # We have joined a channel
         if username == self.connection.get_nickname():
-            self.session.new_conversation(channel, self)
-        # Someone else has joined a channel we're in
+            self.session.new_conversation(self, channel)
+        # Someone else joined a channel we're in
         else:
             self.session.user_joined_conversation(self, username, channel)
 
@@ -101,7 +101,12 @@ class IRCConnection(irclib.SimpleIRCClient):
     def on_part(self, c, e):
         """ Called when a user leaves a channel we're in. """
         username, channel = self.parse_event(e)
-        self.session.user_left_conversation(self, username, channel)
+        # We have left a channel
+        if username == self.connection.get_nickname():
+            self.session.leave_conversation(self, channel)
+        # Someone else left a channel we're in
+        else:
+            self.session.user_left_conversation(self, username, channel)
 
     def on_privmsg(self, c, e):
         """ Called when a channel-specific/private message is received. """
@@ -113,7 +118,7 @@ class IRCConnection(irclib.SimpleIRCClient):
 
     def on_welcome(self, c, e):
         """ Called when the connection is ready. """
-        for channel in ["#pyguybot_test", "#ubuntu"]:
+        for channel in ["#pyguybot_test"]:
             c.join(channel)
 
 
