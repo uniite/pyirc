@@ -3,35 +3,13 @@ import gevent
 from gevent import Greenlet, sleep
 from gevent.server import StreamServer
 import json
-from server import Message, Session, JSONEncoder, JSONSerializable
+from models import Message, Session, JSONEncoder, JSONSerializable
 from struct import pack, unpack
 from json_rpc_client import handle_json_rpc_request
 import traceback
 
-
-class RPCService(object):
-    @classmethod
-    def listMethods(cls):
-        return ["getConversations", "getMessages", "sendMessage", "getSession"]
-
-    @classmethod
-    def getConversations(cls):
-        return session.conversations.values()
-
-    @classmethod
-    def sendMessage(cls, conversation_id, message):
-        return session.send_message(conversation_id, message)
-
-    @classmethod
-    def getSession(cls):
-        return session.to_dict()
-
-    @classmethod
-    def getMessages(cls):
-        messages = []
-        for conv in session.conversations.values():
-            messages.extend(conv.messages)
-        return messages
+from models.client_session import ClientSession
+from models.rpc_service import RPCService
 
 
 def recv_obj(socket):
@@ -79,10 +57,22 @@ class NumberOrText(JSONSerializable):
 
 class Delta(JSONSerializable):
     _json_attrs = ["target", "event", "dataType"]
-    def __init__(self, target, event, data):
-        self.target = [NumberOrText(x) for x in target]
-        self.event  = event
-        self.dataType = data.__class__.__name__
+    def __setattr__(self, key, value):
+        if key == "target":
+            value = decode_target(value)
+        elif key == "data":
+            self.dataType = data.__class__.__name__
+        super(object, self).__setattr__(self, key, value)
+
+def decode_target(t):
+    return [NumberOrText.from_dict(x).value() for x in t]
+
+class Subscription(JSONSerializable):
+    _json_attrs = ["target"]
+    def __setattr__(self, key, value):
+        if key == "target":
+            value = decode_target(value)
+        super(object, self).__setattr__(self, key, value)
 
 def handle(socket, address):
     try:

@@ -1,7 +1,7 @@
 __author__ = 'Jon'
 
 import unittest
-from observable import SimpleObservable, ObservableList, ObservableDict
+from observable import ObservableDict, ObservableList, SimpleObservable, subscription
 
 class TestSimpleObservable(unittest.TestCase):
     def setUp(self):
