@@ -1,15 +1,12 @@
-import os
-import gevent
+import gevent.monkey; gevent.monkey.patch_all()
 from gevent import Greenlet, sleep
 from gevent.server import StreamServer
 import json
 from models import Message, Session, JSONEncoder, JSONSerializable
 from struct import pack, unpack
-from json_rpc_client import handle_json_rpc_request
 import traceback
 
 from models.client_session import ClientSession
-from models.rpc_service import RPCService
 
 
 def recv_obj(socket):
@@ -75,50 +72,8 @@ class Subscription(JSONSerializable):
         super(object, self).__setattr__(self, key, value)
 
 def handle(socket, address):
-    try:
-        print "Got TCP connection"
-        #send_obj(RPCService.getMessages())
-        filters = ["conversations", "messages"]
-        def on_event(target, event, data):
-            # We only want to operate one-level deep
-            # (usually on lists)
-            target = list(target)[-2:]
-            # Put together a delta the client can decode easily
-            delta = Delta(target, event, data)
-            if target[0] in filters:
-                send_obj(socket, delta)
-                send_obj(socket, data)
-        #subscription = session.conversations[0].subscribe("messages", on_msg)
-        subscription = session.subscribe("__all__", on_event)
-        for c in session.conversations:
-            delta = Delta(("conversations", -1), "add", c)
-            send_obj(socket, delta)
-            send_obj(socket, c)
-        while True:
-            req = recv_obj(socket)
-            print "Got request: %s" % req
-            if req == None:
-                break
-            # Push Subscription
-            if req.has_key("dataType"):
-                target = [NumberOrText.from_dict(x).value() for x in req["target"]]
-                filters.append(target)
-            # Delta
-            elif req.has_key("target"):
-                target = [NumberOrText.from_dict(x).value() for x in req["target"]]
-                print "Target: %s" % target
-                if target[0] == "conversations":
-                    if req["event"] == "add":
-                        conv = recv_obj(socket)
-                        print "Got conversation: %s" % conv
-                        session.connections.values()[0].connection.join(conv["name"])
-                    elif req["event"] == "remove":
-                        conv = recv_obj(socket)
-                        print "Got conversation: %s" % conv
-                        session.connections.values()[0].connection.part([conv["name"]])
-    except Exception, e:
-        print "Error: %s" % e
-        print traceback.format_exc()
+    print "Got connection"
+    client_session = ClientSession(socket, session)
 
 
 

@@ -1,6 +1,9 @@
 import os
 import traceback
 
+import gevent.monkey
+# Monkey patching stdlib is not a necessity for all use cases
+gevent.monkey.patch_all()
 from gevent import Greenlet, sleep
 from gevent.pywsgi import WSGIServer
 from geventwebsocket import WebSocketError
@@ -8,44 +11,40 @@ from geventwebsocket import WebSocketHandler
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 import json
+from gevent_sockjs.server import SockJSServer
+from gevent_sockjs.router import SockJSRouter, SockJSConnection
+# Need to moneky patch the threading module to use greenlets
+import werkzeug.serving
 
 from models import JSONEncoder, RPCService
 from server import Session, spam
 
 
 
-
-def rpc_server(environ, start_response):
-    websocket = environ.get("wsgi.websocket")
-    if websocket is None:
-        return http_handler(environ, start_response)
-    try:
+class SessionConnection(SockJSConnection):
+    def on_open(self, sockjs_session):
         print "Got websocket request"
-        def on_event(target, event, data):
-            delta = {
-                "event": event,
-                "target": target,
-                "data": data
-            }
-            print JSONEncoder().encode(delta)
-            websocket.send(JSONEncoder().encode({"notification": {"delta": delta}}))
-        subscription = session.subscribe("__all__", on_event)
-        while True:
-            request = websocket.receive()
-            if request is None:
-                break
-            else:
-                result = handle_json_rpc_request(request)
-                if result:
-                    websocket.send(result)
-    except WebSocketError, ex:
-        print "%s: %s" % (ex.__class__.__name__, ex)
-    finally:
-        try:
-            subscription.cancel()
-        except:
-            pass
-        websocket.close()
+        self.subscription = session.subscribe("__all__", on_event)
+
+    def on_event(target, event, data):
+        delta = {
+            "event": event,
+            "target": target,
+            "data": data
+        }
+        print JSONEncoder().encode(delta)
+        self.send(JSONEncoder().encode({"notification": {"delta": delta}}))
+
+    def on_message(self, message):
+        request = websocket.receive()
+        if request is not None:
+            result = handle_json_rpc_request(request)
+            if result:
+                self.send(result)
+
+    def on_close(self, sockjs_session):
+        self.subscription.cancel()
+
 
 def handle_json_rpc_request(request):
     # Parse the request
@@ -114,6 +113,10 @@ def http_handler(environ, start_response):
 
 
 
+router = SockJSRouter({
+    'session': SessionConnection
+})
+
 def main():
     global session
     session = Session()
@@ -121,7 +124,11 @@ def main():
     #spam_greenlet = Greenlet.spawn(spam, session)
     http_server = HTTPServer(("", 8081), SimpleHTTPRequestHandler)
     http_greenlet = Greenlet.spawn(http_server.serve_forever)
-    WSGIServer(("", 8000), rpc_server, handler_class=WebSocketHandler).serve_forever()
+    try:
+        sockjs = SockJSServer(("", 8000), router, trace=True)
+        sockjs.serve_forever()
+    except KeyboardInterrupt:
+        sockjs.kill()
 
 if __name__ == "__main__":
     main()

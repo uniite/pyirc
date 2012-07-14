@@ -1,0 +1,121 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=1;" />
+
+    <script src="http://cdn.sockjs.org/sockjs-0.3.min.js" type="text/javascript"></script>
+    <script src="vendor/js/jquery/jquery-1.7.1.min.js" type="text/javascript"></script>
+    <script src="vendor/js/jquery/jquery-ui-1.8.17.custom.min.js" type="text/javascript"></script>
+    <script src="vendor/js/knockout/knockout-latest.debug.js" type="text/javascript"></script>
+    <script src="vendor/js/knockout/knockout.mapping-2.0.1.js" type="text/javascript"></script>
+    <script src="vendor/js/jquery/jquery.ui.touch-punch.min.js" type="text/javascript"></script>
+    <script src="vendor/js/jquery/jquery.getscrollbarwidth.js" type="text/javascript"></script>
+    <script src="vendor/js/knockout/knockout-repeat.js" type="text/javascript"></script>
+    <script src="vendor/js/knockout/knockout-deferred-updates.js" type="text/javascript"></script>
+    <script src="vendor/js/jquery/jquery.base64.min.js" type="text/javascript"></script>
+    <script src="vendor/js/websocket.js" type="text/javascript"></script>
+    <script src="vendor/js/iscroll.js" type="text/javascript"></script>
+    <script src="js/app3.js" type="text/javascript"></script>
+
+    <link href="vendor/css/bootstrap.min.css" type="text/css" rel="stylesheet" />
+    <link href="css/app.css" type="text/css" rel="stylesheet" />
+</head>
+<body>
+<script>
+var pageScroller;
+$(function() {
+    pageScroller = new iScroll('PageContainer', {
+        snap: ".pane",
+        momentum: false,
+        hScrollbar: false,
+        hscroll: true,
+        vscroll: false
+    });
+});
+</script>
+<script>
+    function isTouchDevice(){
+        try{
+            document.createEvent("TouchEvent");
+            return true;
+        }catch(e){
+            return false;
+        }
+    }
+    function touchScroll(el){
+        if(isTouchDevice()){ //if touch events exist...
+            var scrollStartPos=0;
+
+            el.addEventListener("touchstart", function(event) {
+                scrollStartPos = $("body")[0].scrollTop + event.touches[0].pageY;
+                event.preventDefault();
+            },false);
+
+            el.addEventListener("touchmove", function(event) {
+                $("body")[0].scrollTop = scrollStartPos - event.touches[0].pageY;
+                event.preventDefault();
+            },false);
+        }
+    }
+    $(function() {
+        touchScroll($(".scrollable")[0]);
+    })
+</script>
+<div id="PageContainer">
+    <div id="scroller">
+        <div style="float: left; width: 100%">
+        <div id="ConversationsList" class="pane">
+            <div class="header">
+                <div class="inner">Conversations</div>
+            </div>
+            <div id="ConversationListInner" class="middle scrollable"
+                 data-bind="foreach: conversations">
+                <div class="conversation"
+                     data-bind="event: { click: $root.openConversation}, css: { selected: $root.currentConversation() == $data }"
+                     >
+                    <span class="name" data-bind="text: name"></span>
+                </div>
+            </div>
+        </div>
+        <div id="Conversation" class="pane">
+            <!-- ko with: currentConversation -->
+                <div class="header">
+                    <div class="inner" data-bind="text: name"></div>
+                </div>
+                <div id="ConversationInner" class="middle scrollable">
+                    <div id="MessagesList">
+                        <div id="MessagesListInner" data-bind="foreach: $root.currentMessages">
+                            <div class="message">
+                                <strong><span data-bind="text: sender"></span>: </strong>
+                                <span data-bind="text: body"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <!-- /ko -->
+            <form id="ConversationFooter" class="footer"
+                  data-bind="if: currentConversation, submit: $root.sendMessage">
+                <div class="left">
+                    <input type="text" data-bind="value: $root.outgoingMessage" />
+                </div>
+                <button id="SendMessage" class="btn btn-primary"
+                        type="submit"
+                        data-bind="click: $root.sendMessage">
+                    Send
+                </button>
+            </form>
+        </div>
+        <div id="UsersList" class="pane">
+            <div class="header">
+                <div class="inner">Users</div>
+            </div>
+            <div id="UsersListInner" class="middle scrollable">
+                <div class="user"
+                     data-bind="repeat: {foreach: currentUsers, bind: 'text: $item()'}">
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+</body>
+</html>

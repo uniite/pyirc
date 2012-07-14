@@ -7,8 +7,7 @@ class JSONRPCClient
     @callbacks = {}
 
     # Connect to the given WebSocket URL
-    window.WebSocket ||= MozWebSocket
-    @ws = new WebSocket @options.url
+    @ws = new SockJS @options.url
     # When the connection is ready,
     # immediately get a list of available JSON-RPC methods
     @ws.onopen = (e) =>
@@ -119,15 +118,20 @@ class SessionModel
         users
 
   sendMessage: =>
-    index = @.conversations().indexOf @.currentConversation()
+    # Makes the Android keyboard stay open
+    $("#ConversationFooter input").focus()
+    # Don't send blank messages
+    return if @outgoingMessage().trim() == ""
+    # Send the mssage
     window.client.sendMessage @currentConversation().id(), @outgoingMessage()
+    # Clear the message box
     @.outgoingMessage("")
 
   openConversation: (conversation) =>
     index = conversation.index()
-    start = (new Date).getTime();
-    index = @.currentConversationIndex(index)
-    console.log("TOOK " + ((new Date).getTime() - start))
+    #start = (new Date).getTime();
+    @.currentConversationIndex(index)
+    #console.log("TOOK " + ((new Date).getTime() - start))
     autoScrollMessages()
     scrollNext()
     #$("body").animate scrollLeft: "+" + ($(window).width() * 2), 0
@@ -138,14 +142,14 @@ $(window).resize ->
  reformat()
  window.scrollSnap()
 
-$(document).bind "scroll", (e) ->
+###$(document).bind "scroll", (e) ->
   if window.scrollDone == true
     window.scrollDone = false
     return
   if window.scrollStopTimeout
     clearTimeout(window.scrollStopTimeout)
   window.scrollStopTimeout = setTimeout(window.scrollSnap, 100)
-  return true
+  return true###
 
 window.scrollSnapEnabled = true
 window.scrollNext = ->
@@ -153,29 +157,32 @@ window.scrollNext = ->
 
 window.lastPane = 0
 window.currentPane = ->
-  return $("body").scrollLeft() / $(window).width()
+  return pageScroller.currPageX #$("body").scrollLeft() / $(window).width()
 
 window.scrollToPane = (pane) ->
-  targetX = $(window).width() * pane
+  #targetX = $(window).width() * pane
   # First, cancel any animations currently running on the body
   # (most likely previous snap animations)
-  $("body").stop(true, true)
-  $("body").animate scrollLeft: targetX, 200
+  window.setTimeout ->
+    pageScroller.scrollToPage(pane)
+  , 0
+  #$("body").stop(true, true)
+  #$("body").animate scrollLeft: targetX, 200
 
 
 window.messagesScrolledToBottom = ->
-  scrollContainer = $("#ConversationInner")
+  scrollContainer = $("#Conversation .scrollable")
   scrollTarget = $("#MessagesList")
   scrollContainer.scrollTop() == (scrollTarget.height() - scrollContainer.height())
 
 window.autoScrollMessages = ->
-  scrollContainer = $("#ConversationInner")
+  scrollContainer = $("#Conversation .scrollable")
   scrollTarget = $("#MessagesList")
-  scrollContainer.scrollTop scrollTarget.height() - scrollContainer.height()
+  scrollContainer.scrollTop(scrollTarget.height() - scrollContainer.height())
 
 
 window.scrollSnap = ->
-  return unless window.scrollSnapEnabled
+  return #unless window.scrollSnapEnabled == true
   console.warn "Snap!"
 
   # Figure the X coordinates of the nearest panes to the left and right
@@ -208,7 +215,7 @@ window.scrollSnap = ->
 
 
 window.dragSnap = ->
-  return unless window.scrollSnapEnabled
+  return #unless window.scrollSnapEnabled
   console.warn "Snap!"
 
   # Figure the X coordinates of the nearest panes to the left and right
@@ -241,11 +248,15 @@ window.dragSnap = ->
 
 
 window.reformat = ->
+  windowHeight = $(window).height()
   windowWidth = $(window).width()
-  $(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width())
+  headerHeight = $(".header").height()
+  footerHeight = $(".footer").height()
+  #$(".scrollable").height(windowHeight - $(".header").height())
+  #$(".middle").height(windowHeight - headerHeight - footerHeight)
+  #$(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width() - 2)
   window.scrollSnapThreshold = windowWidth / 2
   autoScrollMessages()
-  scrollSnap()
   true
 
 
@@ -256,7 +267,7 @@ $ ->
   w = $(window).width()
 
   window.client = new JSONRPCClient
-    url: "ws://192.168.7.100:8000/",
+    url: "http://#{window.location.host}/session",
     #url: "ws://shoebox.jbotelho.com:42450/",
     ready: =>
       console.log "Ready callback"
@@ -274,7 +285,12 @@ $ ->
       console.log "Notification: " + data
       shouldScroll = messagesScrolledToBottom()
       Util.applyDelta session, data.delta
-      autoScrollMessages() if shouldScroll
+      if shouldScroll
+        # Doing autoScrollMessages immediately doesn't work,
+        # because WebKit has delayed rendering
+        window.setTimeout ->
+          autoScrollMessages()
+        ,0
       #newViewModel = ko.mapping.fromJS({messages: data});
       #for message in newViewModel.messages()
       #  viewModel.messages.push message

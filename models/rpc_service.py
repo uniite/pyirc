@@ -1,23 +1,22 @@
 class RPCService(object):
-    @classmethod
+    def __init__(self, session):
+        self.session = session
+
     def listMethods(cls):
         return ["getConversations", "getMessages", "sendMessage", "getSession"]
 
-    @classmethod
-    def getConversations(cls):
-        return session.conversations.values()
+    def getConversations(self):
+        return self.session.conversations.values()
 
-    @classmethod
-    def sendMessage(cls, conversation_id, message):
-        return session.send_message(conversation_id, message)
+    def sendMessage(self, conversation_id, message):
+        return self.session.send_message(conversation_id, message)
 
-    @classmethod
-    def getSession(cls):
-        return session.to_dict()
+    def getSession(self):
+        print self.session.conversations
+        return self.session.to_dict()
 
-    @classmethod
-    def getMessages(cls):
+    def getMessages(self):
         messages = []
-        for conv in session.conversations.values():
+        for conv in self.session.conversations.values():
             messages.extend(conv.messages)
         return messages

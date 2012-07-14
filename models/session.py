@@ -26,14 +26,22 @@ class Session(SimpleObservable, JSONSerializable):
         self.last_key = self.conversation_key(connection, name)
         return conv
 
-    def leave_conversation(self, connection, name):
+    def join_conversation(self, connection, name):
+        connection.join(name)
+
+    def remove_conversation(self, connection, name):
         for i in range(len(self.conversations)):
             c = self.conversations[i]
             print c
             if c.name == name and c.connection == connection:
                 print "DELETED"
+                del self.conversation_lookup[self.conversation_key(connection, name)]
                 del self.conversations[i]
                 break
+
+    def leave_conversation(self, connection, name):
+        print "PART %s" % name
+        return connection.part([name])
 
     def user_joined_conversation(self, connection, username, chatroom):
         self.get_conversation(connection, chatroom).users.append(username)
@@ -55,8 +63,15 @@ class Session(SimpleObservable, JSONSerializable):
             conv = self.create_conversation(connection, conv_name)
         conv.recv_message(Message(None, username, message, conv))
 
+    def conversation_by_id(self, conv_id):
+        matches = [c for c in self.conversations if c.id == conv_id]
+        if matches:
+            return matches[0]
+        else:
+            return None
+
     def send_message(self, conversation_id, message):
-        conv = self.conversations[conversation_id]
+        conv = self.conversation_by_id(conversation_id)
         conv.send_message(Message(None, "me", message, conv))
         # TODO: Support IRC ['ACTION', 'looks around']
     def start(self):
@@ -64,4 +79,3 @@ class Session(SimpleObservable, JSONSerializable):
         self.connections["irc"] = irc
         print "Connecting..."
         irc.start()
-        print "Connected."

@@ -11,8 +11,7 @@
       console.log(this.options);
       this.idCounter = 0;
       this.callbacks = {};
-      window.WebSocket || (window.WebSocket = MozWebSocket);
-      this.ws = new WebSocket(this.options.url);
+      this.ws = new SockJS(this.options.url);
       this.ws.onopen = function(e) {
         console.log("Connected!");
         return _this._call("listMethods", [
@@ -154,18 +153,18 @@
     }
 
     SessionModel.prototype.sendMessage = function() {
-      var index;
-      index = this.conversations().indexOf(this.currentConversation());
+      $("#ConversationFooter input").focus();
+      if (this.outgoingMessage().trim() === "") {
+        return;
+      }
       window.client.sendMessage(this.currentConversation().id(), this.outgoingMessage());
       return this.outgoingMessage("");
     };
 
     SessionModel.prototype.openConversation = function(conversation) {
-      var index, start;
+      var index;
       index = conversation.index();
-      start = (new Date).getTime();
-      index = this.currentConversationIndex(index);
-      console.log("TOOK " + ((new Date).getTime() - start));
+      this.currentConversationIndex(index);
       autoScrollMessages();
       return scrollNext();
     };
@@ -179,17 +178,16 @@
     return window.scrollSnap();
   });
 
-  $(document).bind("scroll", function(e) {
-    if (window.scrollDone === true) {
-      window.scrollDone = false;
-      return;
-    }
-    if (window.scrollStopTimeout) {
-      clearTimeout(window.scrollStopTimeout);
-    }
-    window.scrollStopTimeout = setTimeout(window.scrollSnap, 100);
-    return true;
-  });
+  /*$(document).bind "scroll", (e) ->
+    if window.scrollDone == true
+      window.scrollDone = false
+      return
+    if window.scrollStopTimeout
+      clearTimeout(window.scrollStopTimeout)
+    window.scrollStopTimeout = setTimeout(window.scrollSnap, 100)
+    return true
+  */
+
 
   window.scrollSnapEnabled = true;
 
@@ -200,37 +198,32 @@
   window.lastPane = 0;
 
   window.currentPane = function() {
-    return $("body").scrollLeft() / $(window).width();
+    return pageScroller.currPageX;
   };
 
   window.scrollToPane = function(pane) {
-    var targetX;
-    targetX = $(window).width() * pane;
-    $("body").stop(true, true);
-    return $("body").animate({
-      scrollLeft: targetX
-    }, 200);
+    return window.setTimeout(function() {
+      return pageScroller.scrollToPage(pane);
+    }, 0);
   };
 
   window.messagesScrolledToBottom = function() {
     var scrollContainer, scrollTarget;
-    scrollContainer = $("#ConversationInner");
+    scrollContainer = $("#Conversation .scrollable");
     scrollTarget = $("#MessagesList");
     return scrollContainer.scrollTop() === (scrollTarget.height() - scrollContainer.height());
   };
 
   window.autoScrollMessages = function() {
     var scrollContainer, scrollTarget;
-    scrollContainer = $("#ConversationInner");
+    scrollContainer = $("#Conversation .scrollable");
     scrollTarget = $("#MessagesList");
     return scrollContainer.scrollTop(scrollTarget.height() - scrollContainer.height());
   };
 
   window.scrollSnap = function() {
     var closerToLeft, leftPaneX, rightPaneX, scrollX, targetX, windowWidth;
-    if (!window.scrollSnapEnabled) {
-      return;
-    }
+    return;
     console.warn("Snap!");
     windowWidth = $(window).width();
     scrollX = $(window).scrollLeft();
@@ -255,9 +248,7 @@
 
   window.dragSnap = function() {
     var closerToLeft, leftPaneX, rightPaneX, scrollX, targetX, windowWidth;
-    if (!window.scrollSnapEnabled) {
-      return;
-    }
+    return;
     console.warn("Snap!");
     windowWidth = $(window).width();
     scrollX = $("#PageContainer").position().left;
@@ -283,12 +274,13 @@
   };
 
   window.reformat = function() {
-    var windowWidth;
+    var footerHeight, headerHeight, windowHeight, windowWidth;
+    windowHeight = $(window).height();
     windowWidth = $(window).width();
-    $(".footer .inner-left").width(windowWidth - $(".footer .inner-right").width());
+    headerHeight = $(".header").height();
+    footerHeight = $(".footer").height();
     window.scrollSnapThreshold = windowWidth / 2;
     autoScrollMessages();
-    scrollSnap();
     return true;
   };
 
@@ -298,7 +290,7 @@
     window.reformat();
     w = $(window).width();
     return window.client = new JSONRPCClient({
-      url: "ws://192.168.7.100:8000/",
+      url: "http://" + window.location.host + "/session",
       ready: function() {
         console.log("Ready callback");
         return client.getSession(function(result) {
@@ -318,7 +310,9 @@
         shouldScroll = messagesScrolledToBottom();
         Util.applyDelta(session, data.delta);
         if (shouldScroll) {
-          return autoScrollMessages();
+          return window.setTimeout(function() {
+            return autoScrollMessages();
+          }, 0);
         }
       },
       error: function(e) {

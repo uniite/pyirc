@@ -1,0 +1,2 @@
+class Subscription(object):
+    pass

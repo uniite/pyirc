@@ -1,11 +1,13 @@
 from json_serializable import JSONSerializable
 from observable import SimpleObservable, ObservableList
+from uuid import uuid4
 
 
 class Conversation(JSONSerializable, SimpleObservable):
-    _json_attrs = ["name", "topic", "messages", "users", "index"]
+    _json_attrs = ["id", "name", "topic", "messages", "users", "index"]
     def __init__(self, name, connection, users=None):
         SimpleObservable.__init__(self)
+        self.id = str(uuid4())
         self.name = name
         self.connection = connection
         self.users = users or []

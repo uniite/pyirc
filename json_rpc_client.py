@@ -1,3 +1,6 @@
+import traceback
+
+
 def handle_json_rpc_request(request):
     # Parse the request
     try:
@@ -39,6 +42,7 @@ def handle_json_rpc_request(request):
 
     # Handle all Exceptions as JSON-RPC exceptions
     except Exception, e:
+        traceback.print_exc()
         result = None
         exception = {
             "name": "JSONRPCError",

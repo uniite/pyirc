@@ -11,7 +11,7 @@ body {
     margin: 0;
     padding: 0;
 
-    overflow-x: scroll;
+    overflow-x: hidden;
     overflow-y: hidden;
 }
 
@@ -25,11 +25,14 @@ body {
 }
 
 #PageContainer {
-    width: 400%;
+    width: 100%;
     height: 100%;
     overflow: hidden;
 }
 
+#scroller {
+    width: 400%;
+}
 
 
 h2 {
@@ -64,18 +67,29 @@ h2 {
 }
 
 .pane {
+    -webkit-box-orient: vertical;
+    -webkit-box-align: stretch;
+    display: -webkit-box;
+
     float: left;
     height: 100%;
     width: 25%;
     user-select: none;
 }
 
-#ConversationsListContainer {
 
+
+
+#ConversationFooter {
+    -webkit-box-orient: horizontal;
+    -webkit-box-align: stretch;
+    display: -webkit-box;
 }
-
-#ConversationContainer {
-
+#ConversationFooter input {
+    width: 100%;
+}
+#ConversationFooter .left {
+    -webkit-box-flex: 1;
 }
 
 
@@ -108,48 +122,25 @@ h2 {
     background: #167799;
 }
 
-
-.middle,
-.scrollable {
-    position: absolute;
-
-    overflow-x: hidden;
-    overflow-y: scroll;
-
-    width: 100%;
-}
-
 .middle {
-    top: 3em;
-    bottom: 2.7em;
+    -webkit-box-flex: 1;
 }
 
 .scrollable {
-    top: 3em;
-    bottom: 0;
+    overflow-y: scroll;
 }
 
-.footer {
-    height: 2.7em;
-    width: 100%;
-
-    position: absolute;
-    bottom: 0;
-}
-
-.footer .inner-left,
-.footer .inner-right {
-    float: left;
-}
 
 .footer input,
 .footer button {
     height: 2em;
     font-size: 1em !important;
+    /*margin-bottom: 0 !important;*/
+    margin: 0.1em !important;
 }
 
-#ConversationFooter input {
-    width: 100%;
+.footer .left {
+    padding-right: 0.2em;
 }
 
 
@@ -161,4 +152,12 @@ li{
 
 li {
     list-style-type: none;
+}
+
+/* item */
+.item {
+    height: 100px;
+    border-top: 1px solid silver;
+    padding: 12px 16px;
+    background-color: #333333;
 }

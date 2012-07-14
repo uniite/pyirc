@@ -1,2 +1,2 @@
 cd ..
-coffee -c -w coffee/*.coffee test/coffee/*.coffee -o js
+coffee -c -o js -w coffee/app3.coffee

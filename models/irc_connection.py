@@ -103,7 +103,7 @@ class IRCConnection(irclib.SimpleIRCClient):
         username, channel = self.parse_event(e)
         # We have left a channel
         if username == self.connection.get_nickname():
-            self.session.leave_conversation(self, channel)
+            self.session.remove_conversation(self, channel)
         # Someone else left a channel we're in
         else:
             self.session.user_left_conversation(self, username, channel)
