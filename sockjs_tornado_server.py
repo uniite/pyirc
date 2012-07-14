@@ -142,7 +142,7 @@ def main():
             debug=True
         )
         app.listen(8000)
-        print "Starting serevr on port 8000"
+        print "Starting server on port 8000"
         loop = ioloop.IOLoop.instance().start()
         sockjs.serve_forever()
     except KeyboardInterrupt:
